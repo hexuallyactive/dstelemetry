@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    /* Browser runtime */
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+
+    /* JSX */
+    "jsx": "react-jsx",
+
+    /* Bundler-driven build */
+    "noEmit": true,
+
+    /* Types */
+    "types": ["vite/client"]
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules"]
+}

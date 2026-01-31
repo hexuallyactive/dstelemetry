@@ -1,0 +1,20 @@
+{
+  "name": "@dstelemetry/api",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "dependencies": {
+    "@dstelemetry/types": "workspace:*",
+    "fastify": "5.7.2",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "25.1.0",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3"
+  }
+}

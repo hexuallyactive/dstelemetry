@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    /* Language & emit */
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022"],
+    "noEmit": true,
+
+    /* Module resolution */
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": false,
+
+    /* Strictness */
+    "strict": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "useUnknownInCatchVariables": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Correctness */
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+
+    /* Types */
+    "skipLibCheck": false,
+
+    /* Paths */
+    "baseUrl": ".",
+    "paths": {
+      "@dstelemetry/*": ["packages/*/src"]
+    }
+  }
+}
