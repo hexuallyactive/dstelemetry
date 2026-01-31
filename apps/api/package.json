@@ -9,7 +9,10 @@
   "packageManager": "pnpm@10.28.2",
   "dependencies": {
     "@dstelemetry/types": "workspace:*",
+    "dotenv": "17.2.3",
     "fastify": "5.7.2",
+    "keypal": "*",
+    "mongodb": "7.0.0",
     "zod": "4.3.6"
   },
   "devDependencies": {
