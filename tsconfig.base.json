@@ -9,7 +9,7 @@
     /* Module resolution */
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
-    "allowImportingTsExtensions": false,
+    "allowImportingTsExtensions": true,
 
     /* Strictness */
     "strict": true,

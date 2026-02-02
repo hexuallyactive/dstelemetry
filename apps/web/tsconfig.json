@@ -11,7 +11,13 @@
     "noEmit": true,
 
     /* Types */
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+
+    /* Paths */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src"],
   "exclude": ["dist", "node_modules"]

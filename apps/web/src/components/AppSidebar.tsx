@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 
 import packageJson from '../../package.json'
+import logo from '../2025_Downstream_Logo_White.png'
 
 import {
   Sidebar,
@@ -61,7 +62,7 @@ export function AppSidebar() {
       <SidebarHeader className="flex flex-col gap-2 p-4 overflow-hidden group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:h-0 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:overflow-hidden transition-all duration-200">
         <Link to="/" className="flex items-center">
           <img
-            src="/2025_Downstream_Logo_White.png"
+            src={logo}
             alt="Downstream"
             className="h-4"
           />
@@ -73,7 +74,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Bridge</SidebarGroupLabel>
+          <SidebarGroupLabel>Platforms</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <Collapsible defaultOpen className="group/collapsible">
@@ -107,19 +108,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Platform</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Platform">
-                  <Monitor />
-                  <span>Platform</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
@@ -127,9 +115,9 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton tooltip="Account">
+                <SidebarMenuButton tooltip="Configuration">
                   <User2 />
-                  <span>Account</span>
+                  <span>Configuration</span>
                   <ChevronUp className="ml-auto" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>

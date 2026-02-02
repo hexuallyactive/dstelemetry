@@ -1,15 +1,22 @@
+import {config} from "./config.js";
+import { logger } from "./logger.js";
 import fastify from "fastify";
-import { User } from "@dstelemetry/types";
+import { registerRoutes } from "./routes/index.js";
 
-const app = fastify();
 
-app.get("/", (req, res) => {
-  res.send(User.parse({ id: "1", name: "John Doe", email: "ohno@ham.com" }));
-});
+async function main() {
+  const app = fastify();
 
-app.listen({ port: 3000 }, (err, address) => {
-  if (err) {
-    console.error(err);
-    process.exit(1);
-  }
-});
+  // Register all routes
+  await registerRoutes(app);
+
+  app.listen({ port: 3000 }, (err, address) => {
+    logger.info(`Server is running on ${address}`);
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
+  });
+}
+
+main().catch(console.error);

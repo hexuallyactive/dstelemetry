@@ -6,7 +6,9 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "zod": "4.3.6"
+    "zod": "4.3.6",
+    "fastify": "^5.7.2",
+    "keypal": "*"
   },
   "devDependencies": {
     "@types/node": "25.1.0",
