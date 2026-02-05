@@ -8,9 +8,7 @@ export async function telemetryRoutes(
   // Apply authentication middleware to all routes in this plugin
   fastify.addHook('onRequest', authenticateApiKey)
 
-  // POST handler for telemetry data
   fastify.post('/', async (request, reply) => {
-    // TODO: Implement telemetry data processing
     const body = request.body
     reply.code(201).send({ 
       message: 'Telemetry data received',

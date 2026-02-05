@@ -42,13 +42,8 @@ import {
 
 const monitoringItems = [
   {
-    title: 'Bridge',
-    url: '/',
-    icon: Network,
-  },
-  {
     title: 'Players',
-    url: '/monitor/overview',
+    url: '/',
     icon: Monitor,
   },
 ]

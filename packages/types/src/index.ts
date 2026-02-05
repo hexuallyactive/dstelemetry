@@ -68,6 +68,22 @@ export const LogEntrySchema = BaseTelemetrySchema.extend({
 
 export type LogEntry = z.infer<typeof LogEntrySchema>;
 
+const FieldsSchema = z.record(z.string(), z.number());
+const TagsSchema = z.record(z.string(), z.string());
+
+const MetricSchema = z.object({
+  name: z.enum(['cpu', 'memory', 'storage', 'uptime', 'log']),
+  timestamp: z.number(),
+  tags: TagsSchema,
+  fields: FieldsSchema,
+});
+
+export const MetricsPayloadSchema = z.object({
+  metrics: z.array(MetricSchema),
+});
+
+export type MetricsPayload = z.infer<typeof MetricsPayloadSchema>;
+
 export const User = z.object({
   id: z.string(),
   name: z.string(),

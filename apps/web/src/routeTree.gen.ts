@@ -10,43 +10,33 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as MonitorOverviewRouteImport } from './routes/monitor/overview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MonitorOverviewRoute = MonitorOverviewRouteImport.update({
-  id: '/monitor/overview',
-  path: '/monitor/overview',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/monitor/overview': typeof MonitorOverviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/monitor/overview': typeof MonitorOverviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/monitor/overview': typeof MonitorOverviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/monitor/overview'
+  fullPaths: '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/monitor/overview'
-  id: '__root__' | '/' | '/monitor/overview'
+  to: '/'
+  id: '__root__' | '/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  MonitorOverviewRoute: typeof MonitorOverviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,19 +48,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/monitor/overview': {
-      id: '/monitor/overview'
-      path: '/monitor/overview'
-      fullPath: '/monitor/overview'
-      preLoaderRoute: typeof MonitorOverviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  MonitorOverviewRoute: MonitorOverviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
