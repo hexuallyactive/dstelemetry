@@ -10,7 +10,7 @@ async function main() {
   // Register all routes
   await registerRoutes(app);
 
-  app.listen({ port: 3000 }, (err, address) => {
+  app.listen({ port: config.HTTP_PORT }, (err, address) => {
     logger.info(`Server is running on ${address}`);
     if (err) {
       console.error(err);
