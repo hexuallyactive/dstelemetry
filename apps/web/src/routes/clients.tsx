@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   CreateTenantBody,
@@ -203,23 +203,30 @@ function RouteComponent() {
   const isSaving = createMutation.isPending || updateMutation.isPending || form.state.isSubmitting
   const isDeleting = deleteMutation.isPending
 
+  useEffect(() => {
+    if (!dialogOpen) return
+    if (editingTenant) {
+      form.reset({
+        name: editingTenant.name,
+        description: editingTenant.description ?? '',
+      })
+    } else {
+      form.reset({
+        name: '',
+        description: '',
+      })
+    }
+  }, [dialogOpen, editingTenant, form])
+
   function openCreateDialog() {
     setEditingTenant(null)
     setSubmitError(null)
-    form.reset({
-      name: '',
-      description: '',
-    })
     setDialogOpen(true)
   }
 
   function openEditDialog(tenant: Tenant) {
     setEditingTenant(tenant)
     setSubmitError(null)
-    form.reset({
-      name: tenant.name,
-      description: tenant.description ?? '',
-    })
     setDialogOpen(true)
   }
 

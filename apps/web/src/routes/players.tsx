@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import {
   CreatePlayerBody,
@@ -219,7 +219,7 @@ function RouteComponent() {
       setSubmitError(null)
 
       const trimmedName = value.name.trim()
-      const trimmedHostname = value.hostname.trim()
+      const trimmedHostname = value.hostname.trim().toUpperCase()
       const trimmedDescription = value.description.trim()
       const trimmedLocation = value.location.trim()
 
@@ -274,29 +274,36 @@ function RouteComponent() {
   const isSaving = createMutation.isPending || updateMutation.isPending || form.state.isSubmitting
   const isDeleting = deleteMutation.isPending
 
+  useEffect(() => {
+    if (!dialogOpen) return
+    if (editingPlayer) {
+      form.reset({
+        name: editingPlayer.name,
+        hostname: editingPlayer.hostname.toUpperCase(),
+        tenantId: editingPlayer.tenantId,
+        description: editingPlayer.description ?? '',
+        location: editingPlayer.location ?? '',
+      })
+    } else {
+      form.reset({
+        name: '',
+        hostname: '',
+        tenantId: tenants[0]?.id ?? '',
+        description: '',
+        location: '',
+      })
+    }
+  }, [dialogOpen, editingPlayer, form, tenants])
+
   function openCreateDialog() {
     setEditingPlayer(null)
     setSubmitError(null)
-    form.reset({
-      name: '',
-      hostname: '',
-      tenantId: tenants[0]?.id ?? '',
-      description: '',
-      location: '',
-    })
     setDialogOpen(true)
   }
 
   function openEditDialog(player: Player) {
     setEditingPlayer(player)
     setSubmitError(null)
-    form.reset({
-      name: player.name,
-      hostname: player.hostname,
-      tenantId: player.tenantId,
-      description: player.description ?? '',
-      location: player.location ?? '',
-    })
     setDialogOpen(true)
   }
 
@@ -407,7 +414,9 @@ function RouteComponent() {
                 {players.map((player) => (
                   <TableRow key={player.id}>
                     <TableCell className="font-medium">{player.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{player.hostname}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {player.hostname.toUpperCase()}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {tenantMap.get(player.tenantId) ?? player.tenantId}
                     </TableCell>
@@ -507,7 +516,9 @@ function RouteComponent() {
                   <label className="text-sm font-medium text-foreground">Hostname</label>
                   <Input
                     value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
+                    onChange={(event) =>
+                      field.handleChange(event.target.value.toUpperCase())
+                    }
                     onBlur={field.handleBlur}
                     placeholder="player-001.local"
                   />
