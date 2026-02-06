@@ -311,9 +311,8 @@ export async function apiRoutes(
     try {
       const { ownerId, scopes, tags, metadata, expiresAt } = request.body
 
-      // Use the authenticated key's ownerId if not provided
-      const apiKeyInfo = request.apiKey
-      const finalOwnerId = ownerId || apiKeyInfo?.record?.metadata?.ownerId || 'default'
+      // Use a single shared ownerId for now
+      const finalOwnerId = ownerId || 'default'
 
       const createOptions: Partial<ApiKeyMetadata> = {
         ownerId: finalOwnerId,
@@ -347,13 +346,7 @@ export async function apiRoutes(
     Reply: ListApiKeysResponse | { error: string }
   }>('/keys', async (request, reply) => {
     try {
-      const apiKeyInfo = request.apiKey
-      const ownerId = apiKeyInfo?.record?.metadata?.ownerId
-
-      if (!ownerId) {
-        reply.code(400).send({ error: 'Unable to determine owner ID' })
-        return
-      }
+      const ownerId = 'default'
 
       // Use storage directly if keyManager doesn't expose findByOwner
       const records = (keyManager as any).findByOwner 
@@ -387,8 +380,7 @@ export async function apiRoutes(
   }>('/keys/:id', async (request, reply) => {
     try {
       const { id } = request.params
-      const apiKeyInfo = request.apiKey
-      const ownerId = apiKeyInfo?.record?.metadata?.ownerId
+      const ownerId = 'default'
 
       const record = await keyManager.findById(id)
 
@@ -430,8 +422,7 @@ export async function apiRoutes(
     try {
       const { id } = request.params
       const { metadata, tags, scopes } = request.body
-      const apiKeyInfo = request.apiKey
-      const ownerId = apiKeyInfo?.record?.metadata?.ownerId
+      const ownerId = 'default'
 
       const record = await keyManager.findById(id)
 
@@ -488,8 +479,7 @@ export async function apiRoutes(
   }>('/keys/:id', async (request, reply) => {
     try {
       const { id } = request.params
-      const apiKeyInfo = request.apiKey
-      const ownerId = apiKeyInfo?.record?.metadata?.ownerId
+      const ownerId = 'default'
 
       const record = await keyManager.findById(id)
 
