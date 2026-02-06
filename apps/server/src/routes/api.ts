@@ -170,6 +170,19 @@ export async function apiRoutes(
         return
       }
 
+      const {key,record: apiKeyRecord}= await keyManager.create(
+        {
+          name: `Player API key for ${name}`,
+          description: `API key for ${name}`,
+          scopes: ['read', 'write'],
+          tags: ['production'],
+          ownerId: 'default',
+        }
+      )
+      if (!apiKeyRecord) {
+        reply.code(500).send({ error: 'Failed to create API key' })
+        return
+      }
       const now = new Date()
       const player: Player = {
         id: randomUUID(),
@@ -178,8 +191,8 @@ export async function apiRoutes(
         tenantId,
         description,
         location,
-        apiKey,
-        apiKeyId,
+        apiKey: key,
+        apiKeyId: apiKeyRecord.id,
         createdAt: now,
         updatedAt: now,
       }
