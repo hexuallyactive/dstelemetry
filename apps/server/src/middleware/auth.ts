@@ -46,16 +46,3 @@ export async function authenticateApiKey(
     return
   }
 }
-/*
-  //const { key, record } = await keyManager.create({
-  //  ownerId: 'user_123',
- //   scopes: ['read', 'write'],
- // })
- 
- const result = await keyManager.verify('sk_ezFtqPSfPBAtt11wY1IwC', { skipCache: true })
- //const result2 = await keyManager.findById('ezFtqPSfPBAtt11wY1IwC')
- logger.warn(result)
-
-    res.send(User.parse({ id: "1", name: "John Doe", email: "ohno@ham.com" }));
-  });
-*/

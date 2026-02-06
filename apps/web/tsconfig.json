@@ -13,6 +13,9 @@
     /* Types */
     "types": ["vite/client"],
 
+    /* Skip checking third-party library types (TanStack Router has issues with exactOptionalPropertyTypes) */
+    "skipLibCheck": true,
+
     /* Paths */
     "baseUrl": ".",
     "paths": {

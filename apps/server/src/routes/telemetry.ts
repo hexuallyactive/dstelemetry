@@ -6,7 +6,7 @@ export async function telemetryRoutes(
   options: FastifyPluginOptions
 ) {
   // Apply authentication middleware to all routes in this plugin
-  fastify.addHook('onRequest', authenticateApiKey)
+  fastify.addHook('preHandler', authenticateApiKey)
 
   fastify.post('/', async (request, reply) => {
     const body = request.body

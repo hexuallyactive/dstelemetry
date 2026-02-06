@@ -18,6 +18,7 @@ export const PlayerSchema = z.object({
   id: z.string(),
   name: z.string().min(1).trim(),
   hostname: z.string().min(1).trim(),
+  tenantId: z.string(),
   description: z.string(),
   location: z.string(),
   createdAt: z.date(),
@@ -25,6 +26,72 @@ export const PlayerSchema = z.object({
 });
 
 export type Player = z.infer<typeof PlayerSchema>;
+
+// Tenant CRUD
+export const CreateTenantBody = z.object({
+  name: z.string().min(1).trim(),
+  description: z.string(),
+});
+
+export type CreateTenantBody = z.infer<typeof CreateTenantBody>;
+
+export const UpdateTenantBody = z.object({
+  name: z.string().min(1).trim().optional(),
+  description: z.string().optional(),
+});
+
+export type UpdateTenantBody = z.infer<typeof UpdateTenantBody>;
+
+export const TenantParams = z.object({
+  id: z.string(),
+});
+
+export type TenantParams = z.infer<typeof TenantParams>;
+
+export const TenantResponse = TenantSchema;
+export type TenantResponse = z.infer<typeof TenantResponse>;
+
+export const ListTenantsResponse = z.object({
+  tenants: z.array(TenantSchema),
+});
+
+export type ListTenantsResponse = z.infer<typeof ListTenantsResponse>;
+
+// Player CRUD
+export const CreatePlayerBody = z.object({
+  name: z.string().min(1).trim(),
+  hostname: z.string().min(1).trim(),
+  tenantId: z.string(),
+  description: z.string(),
+  location: z.string(),
+});
+
+export type CreatePlayerBody = z.infer<typeof CreatePlayerBody>;
+
+export const UpdatePlayerBody = z.object({
+  name: z.string().min(1).trim().optional(),
+  hostname: z.string().min(1).trim().optional(),
+  tenantId: z.string().optional(),
+  description: z.string().optional(),
+  location: z.string().optional(),
+});
+
+export type UpdatePlayerBody = z.infer<typeof UpdatePlayerBody>;
+
+export const PlayerParams = z.object({
+  id: z.string(),
+});
+
+export type PlayerParams = z.infer<typeof PlayerParams>;
+
+export const PlayerResponse = PlayerSchema;
+export type PlayerResponse = z.infer<typeof PlayerResponse>;
+
+export const ListPlayersResponse = z.object({
+  players: z.array(PlayerSchema),
+});
+
+export type ListPlayersResponse = z.infer<typeof ListPlayersResponse>;
 
 // Telemetry
 const BaseTelemetrySchema = z.object({

@@ -5,10 +5,6 @@ import { logger } from '../logger.ts';
 let client: MongoClient | null = null;
 let isConnecting = false;
 
-/**
- * Get or create a MongoDB client instance.
- * Uses a singleton pattern to ensure only one connection is created.
- */
 export async function getMongoClient(): Promise<MongoClient> {
   if (client) {
     return client;
@@ -43,20 +39,12 @@ export async function getMongoClient(): Promise<MongoClient> {
   }
 }
 
-/**
- * Get a database instance from the MongoDB client.
- * @param dbName - The name of the database. Defaults to the value from MONGODB_DB_NAME env var or 'dstelemetry'
- */
 export async function getDatabase(dbName?: string): Promise<Db> {
   const mongoClient = await getMongoClient();
   const databaseName = dbName;
   return mongoClient.db(databaseName);
 }
 
-/**
- * Close the MongoDB connection.
- * Useful for cleanup in tests or graceful shutdown.
- */
 export async function closeConnection(): Promise<void> {
   if (client) {
     await client.close();
@@ -65,11 +53,6 @@ export async function closeConnection(): Promise<void> {
   }
 }
 
-/**
- * Initialize time series collections for telemetry data in the telemetry database.
- * Creates collections with automatic expiration after 30 days.
- * This function is idempotent and safe to call multiple times.
- */
 export async function initializeTelemetryCollections(): Promise<void> {
   try {
     const db = await getDatabase('telemetry');
@@ -80,6 +63,7 @@ export async function initializeTelemetryCollections(): Promise<void> {
       'storage_readings',
       'uptime_readings',
       'log_entries',
+      'alerts'
     ];
 
     const timeSeriesOptions = {
@@ -177,6 +161,40 @@ export async function initializeSystemCollections(): Promise<void> {
         }
       } else {
         logger.error({ error }, 'Failed to create players collection');
+        throw error;
+      }
+    }
+
+    try {
+      const existingApiKeys = await db.listCollections({ name: 'api_keys' }).toArray();
+      if (existingApiKeys.length === 0) {
+        await db.createCollection('api_keys');
+        await db.collection('api_keys').createIndex({ keyHash: 1 }, { unique: true });
+        logger.info('Created api_keys collection with indexes');
+      } else {
+        logger.debug('api_keys collection already exists, skipping creation');
+      }
+    } catch (error: any) {
+      if (error.code === 48 || error.codeName === 'NamespaceExists') {
+        logger.debug('api_keys collection already exists, skipping creation');
+      } else {
+        logger.error({ error }, 'Failed to create api_keys collection');
+        throw error;
+      }
+    }
+
+    try {
+      const existingAuditLogs = await db.listCollections({ name: 'audit_logs' }).toArray();
+      if (existingAuditLogs.length === 0) {
+        await db.createCollection('audit_logs');
+        await db.collection('audit_logs').createIndex({ timestamp: 1 });
+        logger.info('Created audit_logs collection with indexes');
+      }
+    } catch (error: any) {
+      if (error.code === 48 || error.codeName === 'NamespaceExists') {
+        logger.debug('audit_logs collection already exists, skipping creation');
+      } else {
+        logger.error({ error }, 'Failed to create audit_logs collection');
         throw error;
       }
     }

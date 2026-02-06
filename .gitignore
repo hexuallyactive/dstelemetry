@@ -24,6 +24,7 @@ tmp/
 temp/
 .cache/
 .nyc_output/
+public/
 
 # IDEs and editors
 #.vscode/
