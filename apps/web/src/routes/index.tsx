@@ -144,7 +144,7 @@ function RouteComponent() {
   const [selectedTenant, setSelectedTenant] = useState<string>("all")
   
   const { data: players = [], isLoading, error } = useQuery({
-    queryKey: ['players'],
+    queryKey: ['monitored-players'],
     queryFn: fetchPlayers,
   })
   

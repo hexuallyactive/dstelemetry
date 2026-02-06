@@ -7,6 +7,8 @@ import {
   User2,
   Monitor,
   Activity,
+  Building2,
+  MonitorCog,
 } from 'lucide-react'
 
 import packageJson from '../../package.json'
@@ -42,10 +44,23 @@ import {
 
 const monitoringItems = [
   {
-    title: 'Players',
+    title: 'Alerts',
     url: '/',
     icon: Monitor,
   },
+]
+
+const configurationItems = [
+  {
+    title: 'Clients',
+    url: '/clients',
+    icon: Building2,
+  },
+  {
+    title: 'Players',
+    url: '/players',
+    icon: MonitorCog,
+  }
 ]
 
 export function AppSidebar() {
@@ -100,6 +115,23 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Configuration</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {configurationItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link to={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

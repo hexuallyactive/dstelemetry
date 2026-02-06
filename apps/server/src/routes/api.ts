@@ -132,12 +132,12 @@ export async function apiRoutes(
         { returnDocument: 'after' }
       )
 
-      if (!result.value) {
+      if (!result) {
         reply.code(404).send({ error: 'Tenant not found' })
         return
       }
 
-      reply.send(result.value)
+      reply.send(result)
     } catch (error) {
       if (isDuplicateKeyError(error)) {
         reply.code(409).send({ error: 'Tenant name already exists' })
@@ -269,12 +269,12 @@ export async function apiRoutes(
         { returnDocument: 'after' }
       )
 
-      if (!result.value) {
+      if (!result) {
         reply.code(404).send({ error: 'Player not found' })
         return
       }
 
-      reply.send(result.value)
+      reply.send(result)
     } catch (error) {
       if (isDuplicateKeyError(error)) {
         reply.code(409).send({ error: 'Player hostname already exists' })
