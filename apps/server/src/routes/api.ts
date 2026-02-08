@@ -1,18 +1,18 @@
 import { nanoid } from 'nanoid'
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type {
-  CreateTenantBody,
-  UpdateTenantBody,
-  TenantParams,
-  TenantResponse,
-  ListTenantsResponse,
-  CreatePlayerBody,
-  UpdatePlayerBody,
-  PlayerParams,
-  PlayerResponse,
-  ListPlayersResponse,
-  Tenant,
-  Player,
+  CreateGroupBody,
+  UpdateGroupBody,
+  GroupParams,
+  GroupResponse,
+  ListGroupsResponse,
+  CreateDeviceBody,
+  UpdateDeviceBody,
+  DeviceParams,
+  DeviceResponse,
+  ListDevicesResponse,
+  Group,
+  Device,
 } from '@dstelemetry/types'
 
 import { getDatabase } from '../database/index.js'
@@ -29,23 +29,23 @@ export async function apiRoutes(
 ) {
 
   const db = await getDatabase('telemetry')
-  const tenantsCollection = db.collection<Tenant>('tenants')
-  const playersCollection = db.collection<Player>('players')
+  const groupsCollection = db.collection<Group>('groups')
+  const devicesCollection = db.collection<Device>('devices')
 
-  async function tenantExists(tenantId: string): Promise<boolean> {
-    const tenant = await tenantsCollection.findOne({ id: tenantId }, { projection: { id: 1 } })
-    return Boolean(tenant)
+  async function groupExists(groupId: string): Promise<boolean> {
+    const group = await groupsCollection.findOne({ id: groupId }, { projection: { id: 1 } })
+    return Boolean(group)
   }
 
-  // POST /api/tenants - Create a new tenant
+  // POST /api/groups - Create a new group
   fastify.post<{
-    Body: CreateTenantBody
-    Reply: TenantResponse | { error: string }
-  }>('/tenants', async (request, reply) => {
+    Body: CreateGroupBody
+    Reply: GroupResponse | { error: string }
+  }>('/groups', async (request, reply) => {
     try {
       const { name, description } = request.body
       const now = new Date()
-      const tenant: Tenant = {
+      const group: Group = {
         id: nanoid(),
         name,
         description,
@@ -53,56 +53,56 @@ export async function apiRoutes(
         updatedAt: now,
       }
 
-      await tenantsCollection.insertOne(tenant)
-      reply.code(201).send(tenant)
+      await groupsCollection.insertOne(group)
+      reply.code(201).send(group)
     } catch (error) {
       if (isDuplicateKeyError(error)) {
-        reply.code(409).send({ error: 'Tenant name already exists' })
+        reply.code(409).send({ error: 'Group name already exists' })
         return
       }
-      logger.error({ error }, 'Error creating tenant')
-      reply.code(500).send({ error: 'Failed to create tenant' })
+      logger.error({ error }, 'Error creating group')
+      reply.code(500).send({ error: 'Failed to create group' })
     }
   })
 
-  // GET /api/tenants - List all tenants
+  // GET /api/groups - List all groups
   fastify.get<{
-    Reply: ListTenantsResponse | { error: string }
-  }>('/tenants', async (_request, reply) => {
+    Reply: ListGroupsResponse | { error: string }
+  }>('/groups', async (_request, reply) => {
     try {
-      const tenants = await tenantsCollection.find({}).toArray()
-      reply.send({ tenants })
+      const groups = await groupsCollection.find({}).toArray()
+      reply.send({ groups })
     } catch (error) {
-      logger.error({ error }, 'Error listing tenants')
-      reply.code(500).send({ error: 'Failed to list tenants' })
+      logger.error({ error }, 'Error listing groups')
+      reply.code(500).send({ error: 'Failed to list groups' })
     }
   })
 
-  // GET /api/tenants/:id - Get a tenant by ID
+  // GET /api/groups/:id - Get a group by ID
   fastify.get<{
-    Params: TenantParams
-    Reply: TenantResponse | { error: string }
-  }>('/tenants/:id', async (request, reply) => {
+    Params: GroupParams
+    Reply: GroupResponse | { error: string }
+  }>('/groups/:id', async (request, reply) => {
     try {
       const { id } = request.params
-      const tenant = await tenantsCollection.findOne({ id })
-      if (!tenant) {
-        reply.code(404).send({ error: 'Tenant not found' })
+      const group = await groupsCollection.findOne({ id })
+      if (!group) {
+        reply.code(404).send({ error: 'Group not found' })
         return
       }
-      reply.send(tenant)
+      reply.send(group)
     } catch (error) {
-      logger.error({ error }, 'Error fetching tenant')
-      reply.code(500).send({ error: 'Failed to fetch tenant' })
+      logger.error({ error }, 'Error fetching group')
+      reply.code(500).send({ error: 'Failed to fetch group' })
     }
   })
 
-  // PUT /api/tenants/:id - Update a tenant
+  // PUT /api/groups/:id - Update a group
   fastify.put<{
-    Params: TenantParams
-    Body: UpdateTenantBody
-    Reply: TenantResponse | { error: string }
-  }>('/tenants/:id', async (request, reply) => {
+    Params: GroupParams
+    Body: UpdateGroupBody
+    Reply: GroupResponse | { error: string }
+  }>('/groups/:id', async (request, reply) => {
     try {
       const { id } = request.params
       const { name, description } = request.body
@@ -111,68 +111,68 @@ export async function apiRoutes(
         return
       }
 
-      const update: Partial<Tenant> = {
+      const update: Partial<Group> = {
         ...(name && { name }),
         ...(description && { description }),
         updatedAt: new Date(),
       }
 
-      const result = await tenantsCollection.findOneAndUpdate(
+      const result = await groupsCollection.findOneAndUpdate(
         { id },
         { $set: update },
         { returnDocument: 'after' }
       )
 
       if (!result) {
-        reply.code(404).send({ error: 'Tenant not found' })
+        reply.code(404).send({ error: 'Group not found' })
         return
       }
 
       reply.send(result)
     } catch (error) {
       if (isDuplicateKeyError(error)) {
-        reply.code(409).send({ error: 'Tenant name already exists' })
+        reply.code(409).send({ error: 'Group name already exists' })
         return
       }
-      logger.error({ error }, 'Error updating tenant')
-      reply.code(500).send({ error: 'Failed to update tenant' })
+      logger.error({ error }, 'Error updating group')
+      reply.code(500).send({ error: 'Failed to update group' })
     }
   })
 
-  // DELETE /api/tenants/:id - Delete a tenant
+  // DELETE /api/groups/:id - Delete a group
   fastify.delete<{
-    Params: TenantParams
-  }>('/tenants/:id', async (request, reply) => {
+    Params: GroupParams
+  }>('/groups/:id', async (request, reply) => {
     try {
       const { id } = request.params
-      const result = await tenantsCollection.deleteOne({ id })
+      const result = await groupsCollection.deleteOne({ id })
       if (result.deletedCount === 0) {
-        reply.code(404).send({ error: 'Tenant not found' })
+        reply.code(404).send({ error: 'Group not found' })
         return
       }
       reply.code(204).send()
     } catch (error) {
-      logger.error({ error }, 'Error deleting tenant')
-      reply.code(500).send({ error: 'Failed to delete tenant' })
+      logger.error({ error }, 'Error deleting group')
+      reply.code(500).send({ error: 'Failed to delete group' })
     }
   })
 
-  // POST /api/players - Create a new player
+  // POST /api/devices - Create a new device
   fastify.post<{
-    Body: CreatePlayerBody
-    Reply: PlayerResponse | { error: string }
-  }>('/players', async (request, reply) => {
+    Body: CreateDeviceBody
+    Reply: DeviceResponse | { error: string }
+  }>('/devices', async (request, reply) => {
     try {
-      const { name, hostname, tenantId, description, location } = request.body
+      const { name, hostname, groupId, description, location } = request.body
 
-      if (!(await tenantExists(tenantId))) {
-        reply.code(400).send({ error: 'Tenant not found' })
+      if (!(await groupExists(groupId))) {
+        reply.code(400).send({ error: 'Group not found' })
         return
       }
 
       const {key,record: apiKeyRecord}= await keyManager.create(
         {
-          name: `Player API key for ${name}`,
+          name: `Device API key for ${name}`,
           description: `API key for ${name}`,
           scopes: ['read', 'write'],
           tags: ['production'],
@@ -184,11 +184,11 @@ export async function apiRoutes(
         return
       }
       const now = new Date()
-      const player: Player = {
+      const device: Device = {
         id: nanoid(),
         name,
         hostname,
-        tenantId,
+        groupId,
         description,
         location,
         apiKey: key,
@@ -197,117 +197,117 @@ export async function apiRoutes(
         updatedAt: now,
       }
 
-      await playersCollection.insertOne(player)
-      reply.code(201).send(player)
+      await devicesCollection.insertOne(device)
+      reply.code(201).send(device)
     } catch (error) {
       if (isDuplicateKeyError(error)) {
-        reply.code(409).send({ error: 'Player hostname already exists' })
+        reply.code(409).send({ error: 'Device hostname already exists' })
         return
       }
-      logger.error({ error }, 'Error creating player')
-      reply.code(500).send({ error: 'Failed to create player' })
+      logger.error({ error }, 'Error creating device')
+      reply.code(500).send({ error: 'Failed to create device' })
     }
   })
 
-  // GET /api/players - List all players
+  // GET /api/devices - List all devices
   fastify.get<{
-    Reply: ListPlayersResponse | { error: string }
-  }>('/players', async (_request, reply) => {
+    Reply: ListDevicesResponse | { error: string }
+  }>('/devices', async (_request, reply) => {
     try {
-      const players = await playersCollection.find({}).toArray()
-      reply.send({ players })
+      const devices = await devicesCollection.find({}).toArray()
+      reply.send({ devices })
     } catch (error) {
-      logger.error({ error }, 'Error listing players')
-      reply.code(500).send({ error: 'Failed to list players' })
+      logger.error({ error }, 'Error listing devices')
+      reply.code(500).send({ error: 'Failed to list devices' })
     }
   })
 
-  // GET /api/players/:id - Get a player by ID
+  // GET /api/devices/:id - Get a device by ID
   fastify.get<{
-    Params: PlayerParams
-    Reply: PlayerResponse | { error: string }
-  }>('/players/:id', async (request, reply) => {
+    Params: DeviceParams
+    Reply: DeviceResponse | { error: string }
+  }>('/devices/:id', async (request, reply) => {
     try {
       const { id } = request.params
-      const player = await playersCollection.findOne({ id })
-      if (!player) {
-        reply.code(404).send({ error: 'Player not found' })
+      const device = await devicesCollection.findOne({ id })
+      if (!device) {
+        reply.code(404).send({ error: 'Device not found' })
         return
       }
-      reply.send(player)
+      reply.send(device)
     } catch (error) {
-      logger.error({ error }, 'Error fetching player')
-      reply.code(500).send({ error: 'Failed to fetch player' })
+      logger.error({ error }, 'Error fetching device')
+      reply.code(500).send({ error: 'Failed to fetch device' })
     }
   })
 
-  // PUT /api/players/:id - Update a player
+  // PUT /api/devices/:id - Update a device
   fastify.put<{
-    Params: PlayerParams
-    Body: UpdatePlayerBody
-    Reply: PlayerResponse | { error: string }
-  }>('/players/:id', async (request, reply) => {
+    Params: DeviceParams
+    Body: UpdateDeviceBody
+    Reply: DeviceResponse | { error: string }
+  }>('/devices/:id', async (request, reply) => {
     try {
       const { id } = request.params
-      const { name, hostname, tenantId, description, location } = request.body
-      if (!name && !hostname && !tenantId && !description && !location) {
+      const { name, hostname, groupId, description, location } = request.body
+      if (!name && !hostname && !groupId && !description && !location) {
         reply.code(400).send({ error: 'No updates provided' })
         return
       }
 
-      if (tenantId && !(await tenantExists(tenantId))) {
-        reply.code(400).send({ error: 'Tenant not found' })
+      if (groupId && !(await groupExists(groupId))) {
+        reply.code(400).send({ error: 'Group not found' })
         return
       }
 
-      const update: Partial<Player> = {
+      const update: Partial<Device> = {
         ...(name && { name }),
         ...(hostname && { hostname }),
-        ...(tenantId && { tenantId }),
+        ...(groupId && { groupId }),
         ...(description && { description }),
         ...(location && { location }),
         updatedAt: new Date(),
       }
 
-      const result = await playersCollection.findOneAndUpdate(
+      const result = await devicesCollection.findOneAndUpdate(
         { id },
         { $set: update },
         { returnDocument: 'after' }
       )
 
       if (!result) {
-        reply.code(404).send({ error: 'Player not found' })
+        reply.code(404).send({ error: 'Device not found' })
         return
       }
 
       reply.send(result)
     } catch (error) {
       if (isDuplicateKeyError(error)) {
-        reply.code(409).send({ error: 'Player hostname already exists' })
+        reply.code(409).send({ error: 'Device hostname already exists' })
         return
       }
-      logger.error({ error }, 'Error updating player')
-      reply.code(500).send({ error: 'Failed to update player' })
+      logger.error({ error }, 'Error updating device')
+      reply.code(500).send({ error: 'Failed to update device' })
     }
   })
 
-  // DELETE /api/players/:id - Delete a player
+  // DELETE /api/devices/:id - Delete a device
   fastify.delete<{
-    Params: PlayerParams
-  }>('/players/:id', async (request, reply) => {
+    Params: DeviceParams
+  }>('/devices/:id', async (request, reply) => {
     try {
       const { id } = request.params
-      const player = await playersCollection.findOne({ id })
-      if (!player) {
-        reply.code(404).send({ error: 'Player not found' })
+      const device = await devicesCollection.findOne({ id })
+      if (!device) {
+        reply.code(404).send({ error: 'Device not found' })
         return
       }
-      await keyManager.revoke(player.apiKeyId)
-      const result = await playersCollection.deleteOne({ id })
+      await keyManager.revoke(device.apiKeyId)
+      const result = await devicesCollection.deleteOne({ id })
       reply.code(204).send()
     } catch (error) {
-      logger.error({ error }, 'Error deleting player')
-      reply.code(500).send({ error: 'Failed to delete player' })
+      logger.error({ error }, 'Error deleting device')
+      reply.code(500).send({ error: 'Failed to delete device' })
     }
   })
 }

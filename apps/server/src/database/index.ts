@@ -142,45 +142,45 @@ export async function initializeSystemCollections(): Promise<void> {
       }
     }
     
-    // Initialize tenants collection
+    // Initialize groups collection
     try {
-      const existingTenants = await db.listCollections({ name: 'tenants' }).toArray();
-      if (existingTenants.length === 0) {
-        await db.createCollection('tenants');
-        await db.collection('tenants').createIndex({ name: 1 }, { unique: true });
-        logger.info('Created tenants collection with indexes');
+      const existingGroups = await db.listCollections({ name: 'groups' }).toArray();
+      if (existingGroups.length === 0) {
+        await db.createCollection('groups');
+        await db.collection('groups').createIndex({ name: 1 }, { unique: true });
+        logger.info('Created groups collection with indexes');
       } else {
-        logger.debug('Tenants collection already exists, skipping creation');
+        logger.debug('Groups collection already exists, skipping creation');
       }
     } catch (error: any) {
       if (error.code === 48 || error.codeName === 'NamespaceExists') {
-        logger.debug('Tenants collection already exists, skipping creation');
+        logger.debug('Groups collection already exists, skipping creation');
       } else {
-        logger.error({ error }, 'Failed to create tenants collection');
+        logger.error({ error }, 'Failed to create groups collection');
         throw error;
       }
     }
 
-    // Initialize players collection
+    // Initialize devices collection
     try {
-      const existingPlayers = await db.listCollections({ name: 'players' }).toArray();
-      if (existingPlayers.length === 0) {
-        await db.createCollection('players');
-        await db.collection('players').createIndex({ tenantId: 1 });
-        await db.collection('players').createIndex({ hostname: 1 }, { unique: true });
-        logger.info('Created players collection with indexes');
+      const existingDevices = await db.listCollections({ name: 'devices' }).toArray();
+      if (existingDevices.length === 0) {
+        await db.createCollection('devices');
+        await db.collection('devices').createIndex({ groupId: 1 });
+        await db.collection('devices').createIndex({ hostname: 1 }, { unique: true });
+        logger.info('Created devices collection with indexes');
       } else {
-        logger.debug('Players collection already exists, skipping creation');
+        logger.debug('Devices collection already exists, skipping creation');
         // Ensure indexes exist even if collection already exists
-        await db.collection('players').createIndex({ tenantId: 1 });
-        await db.collection('players').createIndex({ hostname: 1 }, { unique: true });
+        await db.collection('devices').createIndex({ groupId: 1 });
+        await db.collection('devices').createIndex({ hostname: 1 }, { unique: true });
       }
     } catch (error: any) {
       if (error.code === 48 || error.codeName === 'NamespaceExists') {
-        logger.debug('Players collection already exists, ensuring indexes');
+        logger.debug('Devices collection already exists, ensuring indexes');
         try {
-          await db.collection('players').createIndex({ tenantId: 1 });
-          await db.collection('players').createIndex({ hostname: 1 }, { unique: true });
+          await db.collection('devices').createIndex({ groupId: 1 });
+          await db.collection('devices').createIndex({ hostname: 1 }, { unique: true });
         } catch (indexError: any) {
           // Index might already exist, which is fine
           if (indexError.code !== 85 && indexError.codeName !== 'IndexOptionsConflict') {
@@ -188,7 +188,7 @@ export async function initializeSystemCollections(): Promise<void> {
           }
         }
       } else {
-        logger.error({ error }, 'Failed to create players collection');
+        logger.error({ error }, 'Failed to create devices collection');
         throw error;
       }
     }

@@ -57,7 +57,7 @@ export const ListGroupsResponse = z.object({
 
 export type ListGroupsResponse = z.infer<typeof ListGroupsResponse>;
 
-// Player CRUD
+// Device CRUD
 export const CreateDeviceBody = z.object({
   name: z.string().min(1).trim(),
   hostname: z.string().min(1).trim(),

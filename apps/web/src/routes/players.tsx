@@ -4,14 +4,14 @@ import { useForm } from '@tanstack/react-form'
 import { useEffect, useMemo, useState } from 'react'
 
 import {
-  CreatePlayerBody,
-  ListPlayersResponse,
-  ListTenantsResponse,
-  PlayerSchema,
-  UpdatePlayerBody,
-  type Player,
-  type Tenant,
-  TenantSchema,
+  CreateDeviceBody,
+  ListDevicesResponse,
+  ListGroupsResponse,
+  DeviceSchema,
+  UpdateDeviceBody,
+  type Device,
+  type Group,
+  GroupSchema,
 } from '@dstelemetry/types'
 
 import {
@@ -56,30 +56,30 @@ export const Route = createFileRoute('/players')({
   component: RouteComponent,
 })
 
-function coercePlayer(
+function coerceDevice(
   raw:
-    | Player
-    | (Omit<Player, 'createdAt' | 'updatedAt'> & {
+    | Device
+    | (Omit<Device, 'createdAt' | 'updatedAt'> & {
         createdAt: string | Date
         updatedAt: string | Date
       })
-): Player {
-  return PlayerSchema.parse({
+): Device {
+  return DeviceSchema.parse({
     ...raw,
     createdAt: new Date(raw.createdAt),
     updatedAt: new Date(raw.updatedAt),
   })
 }
 
-function coerceTenant(
+function coerceGroup(
   raw:
-    | Tenant
-    | (Omit<Tenant, 'createdAt' | 'updatedAt'> & {
+    | Group
+    | (Omit<Group, 'createdAt' | 'updatedAt'> & {
         createdAt: string | Date
         updatedAt: string | Date
       })
-): Tenant {
-  return TenantSchema.parse({
+): Group {
+  return GroupSchema.parse({
     ...raw,
     createdAt: new Date(raw.createdAt),
     updatedAt: new Date(raw.updatedAt),
@@ -87,10 +87,10 @@ function coerceTenant(
 }
 
 
-async function fetchPlayers(): Promise<Player[]> {
-  const response = await fetch('/api/players')
+async function fetchDevices(): Promise<Device[]> {
+  const response = await fetch('/api/devices')
   if (!response.ok) {
-    throw new Error('Failed to load players')
+    throw new Error('Failed to load devices')
   }
   if (response.status === 204) {
     return []
@@ -100,57 +100,57 @@ async function fetchPlayers(): Promise<Player[]> {
     return []
   }
   const data = JSON.parse(text)
-  const parsed = ListPlayersResponse.parse({
-    players: Array.isArray(data?.players) ? data.players.map(coercePlayer) : [],
+  const parsed = ListDevicesResponse.parse({
+    devices: Array.isArray(data?.devices) ? data.devices.map(coerceDevice) : [],
   })
-  return parsed.players
+  return parsed.devices
 }
 
-async function fetchTenants(): Promise<Tenant[]> {
-  const response = await fetch('/api/tenants')
+async function fetchGroups(): Promise<Group[]> {
+  const response = await fetch('/api/groups')
   if (!response.ok) {
-    throw new Error('Failed to load tenants')
+    throw new Error('Failed to load groups')
   }
   const data = await response.json()
-  const parsed = ListTenantsResponse.parse({
-    tenants: Array.isArray(data?.tenants) ? data.tenants.map(coerceTenant) : [],
+  const parsed = ListGroupsResponse.parse({
+    groups: Array.isArray(data?.groups) ? data.groups.map(coerceGroup) : [],
   })
-  return parsed.tenants
+  return parsed.groups
 }
 
-async function createPlayer(input: CreatePlayerBody): Promise<Player> {
-  const response = await fetch('/api/players', {
+async function createDevice(input: CreateDeviceBody): Promise<Device> {
+  const response = await fetch('/api/devices', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
   const data = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(data?.error ?? 'Failed to create player')
+    throw new Error(data?.error ?? 'Failed to create device')
   }
-  return coercePlayer(data)
+  return coerceDevice(data)
 }
 
-async function updatePlayer(id: string, input: UpdatePlayerBody): Promise<Player> {
-  const response = await fetch(`/api/players/${id}`, {
+async function updateDevice(id: string, input: UpdateDeviceBody): Promise<Device> {
+  const response = await fetch(`/api/devices/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
   const data = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(data?.error ?? 'Failed to update player')
+    throw new Error(data?.error ?? 'Failed to update device')
   }
-  return coercePlayer(data)
+  return coerceDevice(data)
 }
 
-async function deletePlayer(id: string): Promise<void> {
-  const response = await fetch(`/api/players/${id}`, {
+async function deleteDevice(id: string): Promise<void> {
+  const response = await fetch(`/api/devices/${id}`, {
     method: 'DELETE',
   })
   const data = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(data?.error ?? 'Failed to delete player')
+    throw new Error(data?.error ?? 'Failed to delete device')
   }
 }
 
@@ -165,54 +165,54 @@ function formatDate(date: Date): string {
 function RouteComponent() {
   const queryClient = useQueryClient()
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null)
+  const [editingDevice, setEditingDevice] = useState<Device | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null)
+  const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const {
-    data: players = [],
-    isLoading: isPlayersLoading,
-    error: playersError,
+    data: devices = [],
+    isLoading: isDevicesLoading,
+    error: devicesError,
   } = useQuery({
-    queryKey: ['players'],
-    queryFn: fetchPlayers,
+    queryKey: ['devices'],
+    queryFn: fetchDevices,
   })
 
   const {
-    data: tenants = [],
-    isLoading: isTenantsLoading,
-    error: tenantsError,
+    data: groups = [],
+    isLoading: isGroupsLoading,
+    error: groupsError,
   } = useQuery({
-    queryKey: ['tenants'],
-    queryFn: fetchTenants,
+    queryKey: ['groups'],
+    queryFn: fetchGroups,
   })
 
-  const tenantMap = useMemo(() => {
-    return new Map(tenants.map((tenant) => [tenant.id, tenant.name]))
-  }, [tenants])
+  const groupMap = useMemo(() => {
+    return new Map(groups.map((group) => [group.id, group.name]))
+  }, [groups])
 
   const createMutation = useMutation({
-    mutationFn: createPlayer,
+    mutationFn: createDevice,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['players'] })
+      queryClient.invalidateQueries({ queryKey: ['devices'] })
       setDialogOpen(false)
     },
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdatePlayerBody }) =>
-      updatePlayer(id, input),
+    mutationFn: ({ id, input }: { id: string; input: UpdateDeviceBody }) =>
+      updateDevice(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['players'] })
+      queryClient.invalidateQueries({ queryKey: ['devices'] })
       setDialogOpen(false)
     },
   })
 
   const deleteMutation = useMutation({
-    mutationFn: deletePlayer,
+    mutationFn: deleteDevice,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['players'] })
+      queryClient.invalidateQueries({ queryKey: ['devices'] })
     },
   })
 
@@ -221,7 +221,7 @@ function RouteComponent() {
     defaultValues: {
       name: '',
       hostname: '',
-      tenantId: '',
+      groupId: '',
       description: '',
       location: '',
     },
@@ -233,11 +233,11 @@ function RouteComponent() {
       const trimmedDescription = value.description.trim()
       const trimmedLocation = value.location.trim()
 
-      if (!editingPlayer) {
-        const parsed = CreatePlayerBody.safeParse({
+      if (!editingDevice) {
+        const parsed = CreateDeviceBody.safeParse({
           name: trimmedName,
           hostname: trimmedHostname,
-          tenantId: value.tenantId,
+          groupId: value.groupId,
           description: trimmedDescription,
           location: trimmedLocation,
         })
@@ -249,20 +249,20 @@ function RouteComponent() {
         return
       }
 
-      const updatePayload: UpdatePlayerBody = {}
-      if (trimmedName !== editingPlayer.name) {
+      const updatePayload: UpdateDeviceBody = {}
+      if (trimmedName !== editingDevice.name) {
         updatePayload.name = trimmedName
       }
-      if (trimmedHostname !== editingPlayer.hostname) {
+      if (trimmedHostname !== editingDevice.hostname) {
         updatePayload.hostname = trimmedHostname
       }
-      if (value.tenantId !== editingPlayer.tenantId) {
-        updatePayload.tenantId = value.tenantId
+      if (value.groupId !== editingDevice.groupId) {
+        updatePayload.groupId = value.groupId
       }
-      if (trimmedDescription !== editingPlayer.description) {
+      if (trimmedDescription !== editingDevice.description) {
         updatePayload.description = trimmedDescription
       }
-      if (trimmedLocation !== editingPlayer.location) {
+      if (trimmedLocation !== editingDevice.location) {
         updatePayload.location = trimmedLocation
       }
 
@@ -271,13 +271,13 @@ function RouteComponent() {
         return
       }
 
-      const parsed = UpdatePlayerBody.safeParse(updatePayload)
+      const parsed = UpdateDeviceBody.safeParse(updatePayload)
       if (!parsed.success) {
         setSubmitError(parsed.error.issues[0]?.message ?? 'Invalid input')
         return
       }
 
-      await updateMutation.mutateAsync({ id: editingPlayer.id, input: parsed.data })
+      await updateMutation.mutateAsync({ id: editingDevice.id, input: parsed.data })
     },
   })
 
@@ -286,33 +286,33 @@ function RouteComponent() {
 
   useEffect(() => {
     if (!dialogOpen) return
-    if (editingPlayer) {
+    if (editingDevice) {
       form.reset({
-        name: editingPlayer.name,
-        hostname: editingPlayer.hostname.toUpperCase(),
-        tenantId: editingPlayer.tenantId,
-        description: editingPlayer.description ?? '',
-        location: editingPlayer.location ?? '',
+        name: editingDevice.name,
+        hostname: editingDevice.hostname.toUpperCase(),
+        groupId: editingDevice.groupId,
+        description: editingDevice.description ?? '',
+        location: editingDevice.location ?? '',
       })
     } else {
       form.reset({
         name: '',
         hostname: '',
-        tenantId: tenants[0]?.id ?? '',
+        groupId: groups[0]?.id ?? '',
         description: '',
         location: '',
       })
     }
-  }, [dialogOpen, editingPlayer, form, tenants])
+  }, [dialogOpen, editingDevice, form, groups])
 
   function openCreateDialog() {
-    setEditingPlayer(null)
+    setEditingDevice(null)
     setSubmitError(null)
     setDialogOpen(true)
   }
 
-  function openEditDialog(player: Player) {
-    setEditingPlayer(player)
+  function openEditDialog(device: Device) {
+    setEditingDevice(device)
     setSubmitError(null)
     setDialogOpen(true)
   }
@@ -320,56 +320,56 @@ function RouteComponent() {
   function handleDialogOpenChange(open: boolean) {
     setDialogOpen(open)
     if (!open) {
-      setEditingPlayer(null)
+      setEditingDevice(null)
       setSubmitError(null)
       form.reset()
     }
   }
 
-  function openDeleteDialog(player: Player) {
-    setPlayerToDelete(player)
+  function openDeleteDialog(device: Device) {
+    setDeviceToDelete(device)
     setDeleteDialogOpen(true)
   }
 
   async function handleConfirmDelete() {
-    if (!playerToDelete) return
+    if (!deviceToDelete) return
     setSubmitError(null)
-    await deleteMutation.mutateAsync(playerToDelete.id)
+    await deleteMutation.mutateAsync(deviceToDelete.id)
     setDeleteDialogOpen(false)
-    setPlayerToDelete(null)
+    setDeviceToDelete(null)
   }
 
   function handleDeleteDialogOpenChange(open: boolean) {
     setDeleteDialogOpen(open)
     if (!open) {
-      setPlayerToDelete(null)
+      setDeviceToDelete(null)
     }
   }
 
 
-  if (isPlayersLoading || isTenantsLoading) {
+  if (isDevicesLoading || isGroupsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading players...</p>
+          <p className="text-muted-foreground">Loading devices...</p>
         </div>
       </div>
     )
   }
 
-  if (playersError || tenantsError) {
+  if (devicesError || groupsError) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-center">
           <XCircle className="h-8 w-8 text-destructive" />
           <div>
-            <p className="text-foreground font-medium">Failed to load players</p>
+            <p className="text-foreground font-medium">Failed to load devices</p>
             <p className="text-muted-foreground text-sm">
-              {playersError instanceof Error
-                ? playersError.message
-                : tenantsError instanceof Error
-                  ? tenantsError.message
+              {devicesError instanceof Error
+                ? devicesError.message
+                : groupsError instanceof Error
+                  ? groupsError.message
                   : 'An unexpected error occurred'}
             </p>
           </div>
@@ -383,21 +383,21 @@ function RouteComponent() {
       <div className="mx-auto max-w-7xl w-full flex flex-col flex-1 min-h-0 gap-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-foreground">Players</h1>
-            <p className="text-sm text-muted-foreground">Manage player devices</p>
+            <h1 className="text-xl font-semibold text-foreground">Devices</h1>
+            <p className="text-sm text-muted-foreground">Manage device players</p>
           </div>
-          <Button onClick={openCreateDialog} disabled={tenants.length === 0}>
+          <Button onClick={openCreateDialog} disabled={groups.length === 0}>
             <Plus className="h-4 w-4" />
-            Add Player
+            Add Device
           </Button>
         </div>
 
         <Card className="flex-1 min-h-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 shrink-0">
             <div>
-              <CardTitle>All Players</CardTitle>
+              <CardTitle>All Devices</CardTitle>
               <CardDescription className="text-xs text-muted-foreground mt-2">
-                {players.length} total
+                {devices.length} total
               </CardDescription>
             </div>
           </CardHeader>
@@ -407,7 +407,7 @@ function RouteComponent() {
                 <TableRow>
                   <TableHead className="w-[220px]">Name</TableHead>
                   <TableHead>Hostname</TableHead>
-                  <TableHead>Tenant</TableHead>
+                  <TableHead>Group</TableHead>
                   <TableHead className="hidden md:table-cell">Location</TableHead>
                   <TableHead className="hidden md:table-cell">Created</TableHead>
                   <TableHead className="hidden md:table-cell">Updated</TableHead>
@@ -415,37 +415,37 @@ function RouteComponent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {players.length === 0 && (
+                {devices.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                      No players yet
+                      No devices yet
                     </TableCell>
                   </TableRow>
                 )}
-                {players.map((player) => (
-                  <TableRow key={player.id}>
-                    <TableCell className="font-medium">{player.name}</TableCell>
+                {devices.map((device) => (
+                  <TableRow key={device.id}>
+                    <TableCell className="font-medium">{device.name}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {player.hostname.toUpperCase()}
+                      {device.hostname.toUpperCase()}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {tenantMap.get(player.tenantId) ?? player.tenantId}
+                      {groupMap.get(device.groupId) ?? device.groupId}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {player.location || '—'}
+                      {device.location || '—'}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {formatDate(player.createdAt)}
+                      {formatDate(device.createdAt)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {formatDate(player.updatedAt)}
+                      {formatDate(device.updatedAt)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => openEditDialog(player)}
+                          onClick={() => openEditDialog(device)}
                         >
                           <Pencil className="h-4 w-4" />
                           Edit
@@ -454,7 +454,7 @@ function RouteComponent() {
                           variant="destructive"
                           size="sm"
                           disabled={isDeleting}
-                          onClick={() => openDeleteDialog(player)}
+                          onClick={() => openDeleteDialog(device)}
                         >
                           Delete
                         </Button>
@@ -471,11 +471,11 @@ function RouteComponent() {
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingPlayer ? 'Edit player' : 'Add player'}</DialogTitle>
+            <DialogTitle>{editingDevice ? 'Edit device' : 'Add device'}</DialogTitle>
             <DialogDescription>
-              {editingPlayer
-                ? 'Update the player details and save changes.'
-                : 'Create a new player device.'}
+              {editingDevice
+                ? 'Update the device details and save changes.'
+                : 'Create a new device.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -491,7 +491,7 @@ function RouteComponent() {
               name="name"
               validators={{
                 onChange: ({ value }) => {
-                  const parsed = CreatePlayerBody.shape.name.safeParse(value.trim())
+                  const parsed = CreateDeviceBody.shape.name.safeParse(value.trim())
                   return parsed.success ? undefined : parsed.error.issues[0]?.message
                 },
               }}
@@ -517,7 +517,7 @@ function RouteComponent() {
               name="hostname"
               validators={{
                 onChange: ({ value }) => {
-                  const parsed = CreatePlayerBody.shape.hostname.safeParse(value.trim())
+                  const parsed = CreateDeviceBody.shape.hostname.safeParse(value.trim())
                   return parsed.success ? undefined : parsed.error.issues[0]?.message
                 },
               }}
@@ -531,7 +531,7 @@ function RouteComponent() {
                       field.handleChange(event.target.value.toUpperCase())
                     }
                     onBlur={field.handleBlur}
-                    placeholder="player-001.local"
+                    placeholder="device-001.local"
                   />
                   {field.state.meta.errors?.[0] && (
                     <p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
@@ -541,30 +541,30 @@ function RouteComponent() {
             </form.Field>
 
             <form.Field
-              name="tenantId"
+              name="groupId"
               validators={{
                 onChange: ({ value }) => {
-                  if (!value) return 'Select a tenant'
+                  if (!value) return 'Select a group'
                   return undefined
                 },
               }}
             >
               {(field) => (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Tenant</label>
+                  <label className="text-sm font-medium text-foreground">Group</label>
                   <Select value={field.state.value} onValueChange={field.handleChange}>
                     <SelectTrigger className="w-full" onBlur={field.handleBlur}>
-                      <SelectValue placeholder="Select a tenant" />
+                      <SelectValue placeholder="Select a group" />
                     </SelectTrigger>
                     <SelectContent>
-                      {tenants.length === 0 && (
+                      {groups.length === 0 && (
                         <SelectItem value="none" disabled>
-                          No tenants available
+                          No groups available
                         </SelectItem>
                       )}
-                      {tenants.map((tenant) => (
-                        <SelectItem key={tenant.id} value={tenant.id}>
-                          {tenant.name}
+                      {groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -611,14 +611,14 @@ function RouteComponent() {
                   ? createMutation.error.message
                   : updateMutation.error instanceof Error
                     ? updateMutation.error.message
-                    : 'Failed to save player'}
+                    : 'Failed to save device'}
               </p>
             )}
 
             <DialogFooter>
               <Button type="submit" disabled={isSaving}>
                 {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-                {editingPlayer ? 'Save changes' : 'Create player'}
+                {editingDevice ? 'Save changes' : 'Create device'}
               </Button>
             </DialogFooter>
           </form>
@@ -628,10 +628,10 @@ function RouteComponent() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={handleDeleteDialogOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete player</AlertDialogTitle>
+            <AlertDialogTitle>Delete device</AlertDialogTitle>
             <AlertDialogDescription>
-              {playerToDelete
-                ? `This will permanently delete ${playerToDelete.name}. This action cannot be undone.`
+              {deviceToDelete
+                ? `This will permanently delete ${deviceToDelete.name}. This action cannot be undone.`
                 : 'This action cannot be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -639,7 +639,7 @@ function RouteComponent() {
             <p className="text-sm text-destructive">
               {deleteMutation.error instanceof Error
                 ? deleteMutation.error.message
-                : 'Failed to delete player'}
+                : 'Failed to delete device'}
             </p>
           )}
           <AlertDialogFooter>
