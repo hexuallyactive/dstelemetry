@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import { authenticateApiKey } from '../middleware/auth.js'
-import { MetricsPayloadSchema, type CpuReading, type MemoryReading, type MetricsPayload, type StorageReading, type UptimeReading, type LogEntry, CpuReadingSchema, MemoryReadingSchema, StorageReadingSchema, UptimeReadingSchema, LogEntrySchema } from '@dstelemetry/types'
+import { MetricsPayloadSchema, type CpuMetric, type MemMetric, type MetricsPayload, type DiskMetric, type SystemMetric, type LogMetric } from '@dstelemetry/types'
 import { getDatabase } from '../database/index.ts'
 import { logger } from '../logger.ts'
 import { z } from 'zod'
@@ -11,11 +11,11 @@ export async function telemetryRoutes(
 ) {
 
   const db = await getDatabase('telemetry')
-  const cpuCollection = db.collection<CpuReading>('cpu')
-  const memCollection = db.collection<MemoryReading>('memory')
-  const diskCollection = db.collection<StorageReading>('disk')
-  const systemCollection = db.collection<UptimeReading>('system')
-  const logCollection = db.collection<LogEntry>('log')
+  const cpuCollection = db.collection<CpuMetric>('cpu')
+  const memCollection = db.collection<MemMetric>('memory')
+  const diskCollection = db.collection<DiskMetric>('disk')
+  const systemCollection = db.collection<SystemMetric>('system')
+  const logCollection = db.collection<LogMetric>('log')
   // Apply authentication middleware to all routes in this plugin
   fastify.addHook('preHandler', authenticateApiKey)
 
@@ -44,34 +44,19 @@ export async function telemetryRoutes(
 
       switch (metric.name) {
         case 'cpu':
-          /*
-          console.log(JSON.stringify(metric, null, 2))
-          const cpuReadingParseResult = CpuReadingSchema.safeParse({
-            ...metric,
-            tags,
-          })
-          if (!cpuReadingParseResult.success) {
-            logger.warn({error: z.prettifyError(cpuReadingParseResult.error)}, 'Invalid CPU reading')
-            reply.code(400).send({ error: 'Invalid CPU reading' })
-            return
-          }
-          const cpuReading: CpuReading = cpuReadingParseResult.data
-          */
-          await cpuCollection.insertOne(metric as unknown as CpuReading)
+          await cpuCollection.insertOne(metric)
           break;
         case 'mem':
-          await memCollection.insertOne(metric as unknown as MemoryReading)
+          await memCollection.insertOne(metric)
           break;
         case 'disk':
-          await diskCollection.insertOne(metric as unknown as StorageReading)
+          await diskCollection.insertOne(metric)
           break;
         case 'system':
-          await systemCollection.insertOne(metric as unknown as UptimeReading)
+          await systemCollection.insertOne(metric)
           break;
         case 'log':
-
-          break;
-        default:
+          await logCollection.insertOne(metric)
           break;
       }
     }

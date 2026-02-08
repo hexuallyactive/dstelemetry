@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// Tenant
-export const TenantSchema = z.object({
+// Group
+export const GroupSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
@@ -9,14 +9,14 @@ export const TenantSchema = z.object({
   updatedAt: z.date(),
 });
 
-export type Tenant = z.infer<typeof TenantSchema>;
+export type Group = z.infer<typeof GroupSchema>;
 
-// Player
-export const PlayerSchema = z.object({
+// Device
+export const DeviceSchema = z.object({
   id: z.string(),
   name: z.string().min(1).trim(),
   hostname: z.string().min(1).trim(),
-  tenantId: z.string(),
+  groupId: z.string(),
   description: z.string(),
   location: z.string(),
   apiKeyId: z.string(),
@@ -25,143 +25,149 @@ export const PlayerSchema = z.object({
   updatedAt: z.date(),
 });
 
-export type Player = z.infer<typeof PlayerSchema>;
+export type Device = z.infer<typeof DeviceSchema>;
 
-// Tenant CRUD
-export const CreateTenantBody = z.object({
+// Group CRUD
+export const CreateGroupBody = z.object({
   name: z.string().min(1).trim(),
   description: z.string(),
 });
 
-export type CreateTenantBody = z.infer<typeof CreateTenantBody>;
+export type CreateGroupBody = z.infer<typeof CreateGroupBody>;
 
-export const UpdateTenantBody = z.object({
+export const UpdateGroupBody = z.object({
   name: z.string().min(1).trim().optional(),
   description: z.string().optional(),
 });
 
-export type UpdateTenantBody = z.infer<typeof UpdateTenantBody>;
+export type UpdateGroupBody = z.infer<typeof UpdateGroupBody>;
 
-export const TenantParams = z.object({
+export const GroupParams = z.object({
   id: z.string(),
 });
 
-export type TenantParams = z.infer<typeof TenantParams>;
+export type GroupParams = z.infer<typeof GroupParams>;
 
-export const TenantResponse = TenantSchema;
-export type TenantResponse = z.infer<typeof TenantResponse>;
+export const GroupResponse = GroupSchema;
+export type GroupResponse = z.infer<typeof GroupResponse>;
 
-export const ListTenantsResponse = z.object({
-  tenants: z.array(TenantSchema),
+export const ListGroupsResponse = z.object({
+  groups: z.array(GroupSchema),
 });
 
-export type ListTenantsResponse = z.infer<typeof ListTenantsResponse>;
+export type ListGroupsResponse = z.infer<typeof ListGroupsResponse>;
 
 // Player CRUD
-export const CreatePlayerBody = z.object({
+export const CreateDeviceBody = z.object({
   name: z.string().min(1).trim(),
   hostname: z.string().min(1).trim(),
-  tenantId: z.string(),
+  groupId: z.string(),
   description: z.string(),
   location: z.string(),
 });
 
-export type CreatePlayerBody = z.infer<typeof CreatePlayerBody>;
+export type CreateDeviceBody = z.infer<typeof CreateDeviceBody>;
 
-export const UpdatePlayerBody = z.object({
+export const UpdateDeviceBody = z.object({
   name: z.string().min(1).trim().optional(),
   hostname: z.string().min(1).trim().optional(),
-  tenantId: z.string().optional(),
+  groupId: z.string().optional(),
   description: z.string().optional(),
   location: z.string().optional(),
 });
 
-export type UpdatePlayerBody = z.infer<typeof UpdatePlayerBody>;
+export type UpdateDeviceBody = z.infer<typeof UpdateDeviceBody>;
 
-export const PlayerParams = z.object({
+export const DeviceParams = z.object({
   id: z.string(),
 });
 
-export type PlayerParams = z.infer<typeof PlayerParams>;
+export type DeviceParams = z.infer<typeof DeviceParams>;
 
-export const PlayerResponse = PlayerSchema;
-export type PlayerResponse = z.infer<typeof PlayerResponse>;
+export const DeviceResponse = DeviceSchema;
+export type DeviceResponse = z.infer<typeof DeviceResponse>;
 
-export const ListPlayersResponse = z.object({
-  players: z.array(PlayerSchema),
+export const ListDevicesResponse = z.object({
+  devices: z.array(DeviceSchema),
 });
 
-export type ListPlayersResponse = z.infer<typeof ListPlayersResponse>;
+export type ListDevicesResponse = z.infer<typeof ListDevicesResponse>;
 
 // Telemetry
-const BaseTelemetrySchema = z.object({
-  timestamp: z.preprocess(
-    (value) =>
-      typeof value === "number" ? new Date(value * 1000) : value,
-    z.date().refine((d) => !isNaN(d.getTime()), {
-      message: "Invalid timestamp",
-    })
-  ),
-  tags: z.record(z.string(), z.string()),
-});
+const TagsSchema = z.record(z.string(), z.string());
 
-export const CpuReadingSchema = BaseTelemetrySchema.extend({
+const TimestampSchema = z.preprocess(
+  (value) =>
+    typeof value === "number" ? new Date(value * 1000) : value,
+  z.date().refine((d) => !isNaN(d.getTime()), {
+    message: "Invalid timestamp",
+  })
+);
+
+const CpuMetricSchema = z.object({
+  name: z.literal('cpu'),
+  timestamp: TimestampSchema,
+  tags: TagsSchema,
   fields: z.object({
     usage_system: z.number(),
     usage_user: z.number(),
-    usage_idle: z.number()
-  })
+    usage_idle: z.number(),
+  }),
 });
 
-export type CpuReading = z.infer<typeof CpuReadingSchema>;
-
-export const MemoryReadingSchema = BaseTelemetrySchema.extend({
+const MemMetricSchema = z.object({
+  name: z.literal('mem'),
+  timestamp: TimestampSchema,
+  tags: TagsSchema,
   fields: z.object({
-    used_percent: z.number()
-  })
+    used_percent: z.number(),
+  }),
 });
 
-export type MemoryReading = z.infer<typeof MemoryReadingSchema>;
-
-export const StorageReadingSchema = BaseTelemetrySchema.extend({
+const DiskMetricSchema = z.object({
+  name: z.literal('disk'),
+  timestamp: TimestampSchema,
+  tags: TagsSchema,
   fields: z.object({
-    used_percent: z.number()
-  })
+    used_percent: z.number(),
+  }),
 });
 
-export type StorageReading = z.infer<typeof StorageReadingSchema>;
-
-export const UptimeReadingSchema = BaseTelemetrySchema.extend({
+const SystemMetricSchema = z.object({
+  name: z.literal('system'),
+  timestamp: TimestampSchema,
+  tags: TagsSchema,
   fields: z.object({
-    uptime_seconds: z.number()
-  })
+    uptime_seconds: z.number(),
+  }),
 });
 
-export type UptimeReading = z.infer<typeof UptimeReadingSchema>;
-
-export const LogEntrySchema = BaseTelemetrySchema.extend({
+const LogMetricSchema = z.object({
+  name: z.literal('log'),
+  timestamp: TimestampSchema,
+  tags: TagsSchema,
   level: z.enum(['debug', 'info', 'warn', 'error', 'fatal']),
   fields: z.object({
-    message: z.string()
-  })
+    message: z.string(),
+  }),
 });
 
-export type LogEntry = z.infer<typeof LogEntrySchema>;
+export const MetricSchema = z.discriminatedUnion('name', [
+  CpuMetricSchema,
+  MemMetricSchema,
+  DiskMetricSchema,
+  SystemMetricSchema,
+  LogMetricSchema,
+]);
 
-const TagsSchema = z.record(z.string(), z.string());
+export type Metric = z.infer<typeof MetricSchema>;
 
-const MetricSchema = z.object({
-  name: z.enum(['cpu', 'mem', 'disk', 'system', 'log']),
-  timestamp: z.preprocess(
-    (value) =>
-      typeof value === "number" ? new Date(value * 1000) : value,
-    z.date().refine((d) => !isNaN(d.getTime()), {
-      message: "Invalid timestamp",
-    })
-  ),
-  tags: TagsSchema,
-  fields: z.record(z.string(), z.number().or(z.string())),
-});
+// Extract individual metric types from the discriminated union
+export type CpuMetric = Extract<Metric, { name: 'cpu' }>;
+export type MemMetric = Extract<Metric, { name: 'mem' }>;
+export type DiskMetric = Extract<Metric, { name: 'disk' }>;
+export type SystemMetric = Extract<Metric, { name: 'system' }>;
+export type LogMetric = Extract<Metric, { name: 'log' }>;
 
 export const MetricsPayloadSchema = z.object({
   metrics: z.array(MetricSchema),
