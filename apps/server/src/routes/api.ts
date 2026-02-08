@@ -150,6 +150,14 @@ export async function apiRoutes(
         reply.code(404).send({ error: 'Group not found' })
         return
       }
+
+      // Delete all devices associated with this group and revoke their API keys
+      const devices = await devicesCollection.find({ groupId: id }).toArray()
+      for (const device of devices) {
+        await keyManager.revoke(device.apiKeyId)
+      }
+      await devicesCollection.deleteMany({ groupId: id })
+
       reply.code(204).send()
     } catch (error) {
       logger.error({ error }, 'Error deleting group')
@@ -170,19 +178,6 @@ export async function apiRoutes(
         return
       }
 
-      const {key,record: apiKeyRecord}= await keyManager.create(
-        {
-          name: `Device API key for ${name}`,
-          description: `API key for ${name}`,
-          scopes: ['read', 'write'],
-          tags: ['production'],
-          ownerId: 'default',
-        }
-      )
-      if (!apiKeyRecord) {
-        reply.code(500).send({ error: 'Failed to create API key' })
-        return
-      }
       const now = new Date()
       const device: Device = {
         id: nanoid(),
@@ -191,14 +186,35 @@ export async function apiRoutes(
         groupId,
         description,
         location,
-        apiKey: key,
-        apiKeyId: apiKeyRecord.id,
+        apiKey: '',
+        apiKeyId: '',
         createdAt: now,
         updatedAt: now,
       }
 
       await devicesCollection.insertOne(device)
-      reply.code(201).send(device)
+
+      const { key, record: apiKeyRecord } = await keyManager.create({
+        name: `${hostname}`,
+        description: `Telemetry API key for ${hostname}`,
+        scopes: ['write'],
+        tags: ['production'],
+        ownerId: groupId,
+      })
+
+      if (!apiKeyRecord) {
+        await devicesCollection.deleteOne({ id: device.id })
+        reply.code(500).send({ error: 'Failed to create API key' })
+        return
+      }
+
+      const updatedDevice = await devicesCollection.findOneAndUpdate(
+        { id: device.id },
+        { $set: { apiKey: key, apiKeyId: apiKeyRecord.id } },
+        { returnDocument: 'after' }
+      )
+
+      reply.code(201).send(updatedDevice!)
     } catch (error) {
       if (isDuplicateKeyError(error)) {
         reply.code(409).send({ error: 'Device hostname already exists' })

@@ -147,11 +147,14 @@ export async function initializeSystemCollections(): Promise<void> {
       const existingGroups = await db.listCollections({ name: 'groups' }).toArray();
       if (existingGroups.length === 0) {
         await db.createCollection('groups');
-        await db.collection('groups').createIndex({ name: 1 }, { unique: true });
-        logger.info('Created groups collection with indexes');
+        logger.info('Created groups collection');
       } else {
         logger.debug('Groups collection already exists, skipping creation');
       }
+      // Ensure indexes exist
+      await db.collection('groups').createIndex({ id: 1 }, { unique: true });
+      await db.collection('groups').createIndex({ name: 1 }, { unique: true });
+      logger.debug('Groups indexes ensured');
     } catch (error: any) {
       if (error.code === 48 || error.codeName === 'NamespaceExists') {
         logger.debug('Groups collection already exists, skipping creation');
@@ -166,27 +169,19 @@ export async function initializeSystemCollections(): Promise<void> {
       const existingDevices = await db.listCollections({ name: 'devices' }).toArray();
       if (existingDevices.length === 0) {
         await db.createCollection('devices');
-        await db.collection('devices').createIndex({ groupId: 1 });
-        await db.collection('devices').createIndex({ hostname: 1 }, { unique: true });
-        logger.info('Created devices collection with indexes');
+        logger.info('Created devices collection');
       } else {
         logger.debug('Devices collection already exists, skipping creation');
-        // Ensure indexes exist even if collection already exists
-        await db.collection('devices').createIndex({ groupId: 1 });
-        await db.collection('devices').createIndex({ hostname: 1 }, { unique: true });
       }
+      // Ensure indexes exist
+      await db.collection('devices').createIndex({ id: 1 }, { unique: true });
+      await db.collection('devices').createIndex({ groupId: 1 });
+      await db.collection('devices').createIndex({ hostname: 1 }, { unique: true });
+      await db.collection('devices').createIndex({ apiKeyId: 1 }, { unique: true });
+      logger.debug('Devices indexes ensured');
     } catch (error: any) {
       if (error.code === 48 || error.codeName === 'NamespaceExists') {
-        logger.debug('Devices collection already exists, ensuring indexes');
-        try {
-          await db.collection('devices').createIndex({ groupId: 1 });
-          await db.collection('devices').createIndex({ hostname: 1 }, { unique: true });
-        } catch (indexError: any) {
-          // Index might already exist, which is fine
-          if (indexError.code !== 85 && indexError.codeName !== 'IndexOptionsConflict') {
-            logger.warn({ error: indexError }, 'Failed to create index, may already exist');
-          }
-        }
+        logger.debug('Devices collection already exists, skipping creation');
       } else {
         logger.error({ error }, 'Failed to create devices collection');
         throw error;
