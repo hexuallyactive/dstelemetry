@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { nanoid } from 'nanoid'
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type {
   CreateTenantBody,
@@ -14,7 +14,7 @@ import type {
   Tenant,
   Player,
 } from '@dstelemetry/types'
-import type { ApiKeyRecord, ApiKeyMetadata, CreateApiKeyInput } from 'keypal'
+
 import { getDatabase } from '../database/index.js'
 import { keyManager, storage } from '../keypal/index.js'
 import { logger } from '../logger.js'
@@ -46,7 +46,7 @@ export async function apiRoutes(
       const { name, description } = request.body
       const now = new Date()
       const tenant: Tenant = {
-        id: randomUUID(),
+        id: nanoid(),
         name,
         description,
         createdAt: now,
@@ -185,7 +185,7 @@ export async function apiRoutes(
       }
       const now = new Date()
       const player: Player = {
-        id: randomUUID(),
+        id: nanoid(),
         name,
         hostname,
         tenantId,
@@ -297,11 +297,13 @@ export async function apiRoutes(
   }>('/players/:id', async (request, reply) => {
     try {
       const { id } = request.params
-      const result = await playersCollection.deleteOne({ id })
-      if (result.deletedCount === 0) {
+      const player = await playersCollection.findOne({ id })
+      if (!player) {
         reply.code(404).send({ error: 'Player not found' })
         return
       }
+      await keyManager.revoke(player.apiKeyId)
+      const result = await playersCollection.deleteOne({ id })
       reply.code(204).send()
     } catch (error) {
       logger.error({ error }, 'Error deleting player')

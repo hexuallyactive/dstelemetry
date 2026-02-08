@@ -1,12 +1,14 @@
 import {config} from "./config.js";
+import compress from '@fastify/compress';
 import { logger } from "./logger.js";
-import fastify from "fastify";
+import fastify, { type FastifyRequest } from "fastify";
 import { registerRoutes } from "./routes/index.js";
 import { initializeTelemetryCollections, initializeSystemCollections, getMongoClient } from "./database/index.js";
 import { fileURLToPath } from "url";
 import path from "path";
 import fastifyStatic from "@fastify/static";
-
+import rateLimit from "@fastify/rate-limit";
+import cron from "node-cron";
 
 async function main() {
   const app = fastify();
@@ -22,6 +24,30 @@ async function main() {
 
   await registerRoutes(app);
 
+  await app.register(rateLimit, {
+    max: 10,
+    timeWindow: '30s',
+    addHeaders: {
+      'x-ratelimit-remaining': true,
+      'x-ratelimit-reset': true,
+    },
+    keyGenerator: (request: FastifyRequest): string => {
+      const apiKey = request.headers['x-api-key'] as string;
+      if (apiKey) {
+        return apiKey;
+      }
+      return request.ip as string;
+    },
+    global: true,
+  });
+
+  app.register(compress, {
+    encodings: ['zstd', 'br', 'gzip', 'deflate'], // modern encodings first, then fallback to older ones
+    requestEncodings: ['zstd', 'br', 'gzip', 'deflate'],
+    threshold: 2048, // generally recommended to be 2048 bytes
+    global: true,
+  });
+
     // __dirname replacement for ESM + TypeScript
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -33,12 +59,11 @@ async function main() {
     decorateReply: false,     // avoid reply.sendFile conflicts
   });
 
-  // SPA fallback (must be last)
-  //app.get("/*", async (_request, reply) => {
-  //  return reply.sendFile("index.html");
-  //});
+  cron.schedule('* * * * *', () => {
+    console.log('running a task every minute');
+  });
 
-  app.listen({ port: config.HTTP_PORT }, (err, address) => {
+  app.listen({ port: config.HTTP_PORT, host: '0.0.0.0' }, (err, address) => {
     logger.info(`Server is running on ${address}`);
     if (err) {
       console.error(err);

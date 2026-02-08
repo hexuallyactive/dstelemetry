@@ -211,7 +211,7 @@ function RouteComponent() {
         description: editingTenant.description ?? '',
       })
     } else {
-      form.reset({
+      form.reset({   
         name: '',
         description: '',
       })

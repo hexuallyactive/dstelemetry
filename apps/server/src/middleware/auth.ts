@@ -1,12 +1,11 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import type { ApiKeyVerificationResult } from '@dstelemetry/types'
+import type { VerifyResult } from 'keypal'
 import { keyManager } from '../keypal/index.js'
 import { logger } from '../logger.js'
 
-// Extend FastifyRequest to include apiKey
 declare module 'fastify' {
   interface FastifyRequest {
-    apiKey?: ApiKeyVerificationResult
+    apiKey?: VerifyResult
   }
 }
 
@@ -21,7 +20,7 @@ export async function authenticateApiKey(
   if (authHeader?.startsWith('Bearer ')) {
     apiKey = authHeader.substring(7)
   } else {
-    // Fallback to X-API-Key header
+    // Fallback to X-API-Key header-9
     apiKey = request.headers['x-api-key'] as string | undefined
   }
 
@@ -39,7 +38,7 @@ export async function authenticateApiKey(
     }
 
     // Attach key info to request for use in route handlers
-    request.apiKey = result as ApiKeyVerificationResult
+    request.apiKey = result as VerifyResult
   } catch (error) {
     logger.error({ error }, 'Error verifying API key')
     reply.code(401).send({ error: 'Invalid API key' })

@@ -53,35 +53,33 @@ export async function closeConnection(): Promise<void> {
   }
 }
 
+/** Time-series collections with their TTL in seconds */
+const TIMESERIES_COLLECTIONS = {
+  cpu: 60 * 60 * 24 * 3, // 3 days
+  memory: 60 * 60 * 24 * 3, // 3 days
+  disk: 60 * 60 * 24 * 3, // 3 days
+  system: 60 * 60 * 24 * 1, // 1 day
+  logs: 60 * 60 * 24 * 7, // 7 days
+} as const;
+
 export async function initializeTelemetryCollections(): Promise<void> {
   try {
     const db = await getDatabase('telemetry');
-    
-    const collections = [
-      'cpu_readings',
-      'memory_readings',
-      'storage_readings',
-      'uptime_readings',
-      'log_entries',
-      'alerts'
-    ];
 
-    const timeSeriesOptions = {
-      timeseries: {
-        timeField: 'timestamp',
-        metaField: 'metadata',
-        granularity: 'seconds' as const,
-      },
-      expireAfterSeconds: 2592000, // 30 days
-    };
-
-    for (const collectionName of collections) {
+    for (const [collectionName, expireAfterSeconds] of Object.entries(TIMESERIES_COLLECTIONS)) {
       try {
         // Check if collection already exists
         const existingCollections = await db.listCollections({ name: collectionName }).toArray();
         
         if (existingCollections.length === 0) {
-          await db.createCollection(collectionName, timeSeriesOptions);
+          await db.createCollection(collectionName, {
+            timeseries: {
+              timeField: 'timestamp',
+              metaField: 'tags',
+              granularity: 'seconds',
+            },
+            expireAfterSeconds,
+          });
           logger.info(`Created time series collection: ${collectionName}`);
         } else {
           logger.debug(`Collection ${collectionName} already exists, skipping creation`);
@@ -113,6 +111,36 @@ export async function initializeTelemetryCollections(): Promise<void> {
 export async function initializeSystemCollections(): Promise<void> {
   try {
     const db = await getDatabase('telemetry');
+
+    // Initialize alerts collection
+    try {
+      const existingAlerts = await db.listCollections({ name: 'alerts' }).toArray();
+      if (existingAlerts.length === 0) {
+        await db.createCollection('alerts');
+        await db.collection('alerts').createIndex(
+          { 
+            host: 1, 
+            type: 1, 
+            resolvedAt: 1 
+          },
+          { 
+            unique: true, 
+            partialFilterExpression: { 
+              resolvedAt: null
+            }
+          });
+        logger.info('Created alerts collection with indexes');
+      } else {
+        logger.debug('Alerts collection already exists, skipping creation');
+      }
+    } catch (error: any) {
+      if (error.code === 48 || error.codeName === 'NamespaceExists') {
+        logger.debug('Alerts collection already exists, skipping creation');
+      } else {
+        logger.error({ error }, 'Failed to create alerts collection');
+        throw error;
+      }
+    }
     
     // Initialize tenants collection
     try {

@@ -4,16 +4,11 @@ import { useForm } from '@tanstack/react-form'
 import { useEffect, useMemo, useState } from 'react'
 
 import {
-  ApiKeyResponse,
   CreatePlayerBody,
-  CreateApiKeyResponse as CreateApiKeyResponseSchema,
-  ListApiKeysResponse,
   ListPlayersResponse,
   ListTenantsResponse,
   PlayerSchema,
   UpdatePlayerBody,
-  type CreateApiKeyResponse as CreateApiKeyResponseType,
-  type ApiKeyResponse as ApiKeyResponseType,
   type Player,
   type Tenant,
   TenantSchema,
@@ -91,44 +86,20 @@ function coerceTenant(
   })
 }
 
-function coerceApiKey(
-  raw:
-    | CreateApiKeyResponseType
-    | (Omit<CreateApiKeyResponseType, 'createdAt' | 'expiresAt'> & {
-        createdAt?: string | Date
-        expiresAt?: string | Date | null
-      })
-): CreateApiKeyResponseType {
-  return CreateApiKeyResponseSchema.parse({
-    ...raw,
-    createdAt: raw.createdAt ? new Date(raw.createdAt) : raw.createdAt,
-    expiresAt: raw.expiresAt ? new Date(raw.expiresAt) : raw.expiresAt ?? null,
-  })
-}
-
-function coerceApiKeyResponse(
-  raw:
-    | ApiKeyResponseType
-    | (Omit<ApiKeyResponseType, 'createdAt' | 'expiresAt' | 'lastUsedAt'> & {
-        createdAt?: string | Date
-        expiresAt?: string | Date | null
-        lastUsedAt?: string | Date | null
-      })
-): ApiKeyResponseType {
-  return ApiKeyResponse.parse({
-    ...raw,
-    createdAt: raw.createdAt ? new Date(raw.createdAt) : raw.createdAt,
-    expiresAt: raw.expiresAt ? new Date(raw.expiresAt) : raw.expiresAt ?? null,
-    lastUsedAt: raw.lastUsedAt ? new Date(raw.lastUsedAt) : raw.lastUsedAt ?? null,
-  })
-}
 
 async function fetchPlayers(): Promise<Player[]> {
   const response = await fetch('/api/players')
   if (!response.ok) {
     throw new Error('Failed to load players')
   }
-  const data = await response.json()
+  if (response.status === 204) {
+    return []
+  }
+  const text = await response.text()
+  if (!text) {
+    return []
+  }
+  const data = JSON.parse(text)
   const parsed = ListPlayersResponse.parse({
     players: Array.isArray(data?.players) ? data.players.map(coercePlayer) : [],
   })
@@ -183,46 +154,6 @@ async function deletePlayer(id: string): Promise<void> {
   }
 }
 
-async function fetchApiKeys(): Promise<ApiKeyResponseType[]> {
-  const response = await fetch('/api/keys')
-  if (!response.ok) {
-    const data = await response.json().catch(() => null)
-    throw new Error(data?.error ?? 'Failed to load API keys')
-  }
-  const data = await response.json()
-  const parsed = ListApiKeysResponse.parse({
-    keys: Array.isArray(data?.keys) ? data.keys.map(coerceApiKeyResponse) : [],
-  })
-  return parsed.keys
-}
-
-async function createPlayerApiKey(player: Player): Promise<CreateApiKeyResponseType> {
-  const response = await fetch('/api/keys', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      metadata: {
-        playerId: player.id,
-        playerName: player.name,
-      },
-    }),
-  })
-  const data = await response.json().catch(() => null)
-  if (!response.ok) {
-    throw new Error(data?.error ?? 'Failed to create API key')
-  }
-  return coerceApiKey(data)
-}
-
-async function deleteApiKey(id: string): Promise<void> {
-  const response = await fetch(`/api/keys/${id}`, {
-    method: 'DELETE',
-  })
-  const data = await response.json().catch(() => null)
-  if (!response.ok) {
-    throw new Error(data?.error ?? 'Failed to delete API key')
-  }
-}
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -237,12 +168,6 @@ function RouteComponent() {
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null)
-  const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false)
-  const [playerForKeys, setPlayerForKeys] = useState<Player | null>(null)
-  const [createdApiKey, setCreatedApiKey] = useState<CreateApiKeyResponseType | null>(null)
-  const [apiKeyError, setApiKeyError] = useState<string | null>(null)
-  const [deleteKeyDialogOpen, setDeleteKeyDialogOpen] = useState(false)
-  const [keyToDelete, setKeyToDelete] = useState<ApiKeyResponseType | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const {
@@ -291,31 +216,6 @@ function RouteComponent() {
     },
   })
 
-  const createApiKeyMutation = useMutation({
-    mutationFn: createPlayerApiKey,
-    onSuccess: (data) => {
-      setCreatedApiKey(data)
-      setApiKeyError(null)
-      queryClient.invalidateQueries({ queryKey: ['api-keys'] })
-    },
-  })
-
-  const deleteApiKeyMutation = useMutation({
-    mutationFn: deleteApiKey,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['api-keys'] })
-    },
-  })
-
-  const {
-    data: apiKeys = [],
-    isLoading: isApiKeysLoading,
-    error: apiKeysError,
-  } = useQuery({
-    queryKey: ['api-keys'],
-    queryFn: fetchApiKeys,
-    enabled: apiKeyDialogOpen,
-  })
 
   const form = useForm({
     defaultValues: {
@@ -383,13 +283,6 @@ function RouteComponent() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending || form.state.isSubmitting
   const isDeleting = deleteMutation.isPending
-  const isCreatingApiKey = createApiKeyMutation.isPending
-  const isDeletingApiKey = deleteApiKeyMutation.isPending
-
-  const playerApiKeys = useMemo(() => {
-    if (!playerForKeys) return []
-    return apiKeys.filter((key) => key.metadata?.['playerId'] === playerForKeys.id)
-  }, [apiKeys, playerForKeys])
 
   useEffect(() => {
     if (!dialogOpen) return
@@ -453,61 +346,6 @@ function RouteComponent() {
     }
   }
 
-  function openApiKeyDialog(player: Player) {
-    setPlayerForKeys(player)
-    setCreatedApiKey(null)
-    setApiKeyError(null)
-    setApiKeyDialogOpen(true)
-  }
-
-  function handleApiKeyDialogOpenChange(open: boolean) {
-    setApiKeyDialogOpen(open)
-    if (!open) {
-      setPlayerForKeys(null)
-      setCreatedApiKey(null)
-      setApiKeyError(null)
-      setKeyToDelete(null)
-      setDeleteKeyDialogOpen(false)
-    }
-  }
-
-  async function handleCreateApiKey() {
-    if (!playerForKeys) return
-    setApiKeyError(null)
-    try {
-      await createApiKeyMutation.mutateAsync(playerForKeys)
-    } catch (error) {
-      setApiKeyError(error instanceof Error ? error.message : 'Failed to create API key')
-    }
-  }
-
-  async function handleCopyApiKey() {
-    if (!createdApiKey?.key) return
-    await navigator.clipboard.writeText(createdApiKey.key)
-  }
-
-  function openDeleteKeyDialog(key: ApiKeyResponseType) {
-    setKeyToDelete(key)
-    setDeleteKeyDialogOpen(true)
-  }
-
-  function handleDeleteKeyDialogOpenChange(open: boolean) {
-    setDeleteKeyDialogOpen(open)
-    if (!open) {
-      setKeyToDelete(null)
-    }
-  }
-
-  async function handleConfirmDeleteKey() {
-    if (!keyToDelete) return
-    try {
-      await deleteApiKeyMutation.mutateAsync(keyToDelete.id)
-      setDeleteKeyDialogOpen(false)
-      setKeyToDelete(null)
-    } catch (error) {
-      setApiKeyError(error instanceof Error ? error.message : 'Failed to delete API key')
-    }
-  }
 
   if (isPlayersLoading || isTenantsLoading) {
     return (
@@ -573,7 +411,7 @@ function RouteComponent() {
                   <TableHead className="hidden md:table-cell">Location</TableHead>
                   <TableHead className="hidden md:table-cell">Created</TableHead>
                   <TableHead className="hidden md:table-cell">Updated</TableHead>
-                  <TableHead className="w-[220px] text-right">Actions</TableHead>
+                  <TableHead className="w-[160px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -604,13 +442,6 @@ function RouteComponent() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openApiKeyDialog(player)}
-                        >
-                          API Keys
-                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -820,120 +651,6 @@ function RouteComponent() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={apiKeyDialogOpen} onOpenChange={handleApiKeyDialogOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>API keys</DialogTitle>
-            <DialogDescription>
-              {playerForKeys
-                ? `Create and manage API keys for ${playerForKeys.name}. Keys are shown only once.`
-                : 'Create and manage API keys for this player.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {createdApiKey ? (
-              <div className="rounded-md border border-border bg-muted/40 p-3 space-y-2">
-                <div className="text-xs text-muted-foreground">New API key</div>
-                <div className="font-mono text-sm break-all">{createdApiKey.key}</div>
-                <div className="text-xs text-muted-foreground">Key ID: {createdApiKey.id}</div>
-                <div className="flex justify-end">
-                  <Button variant="outline" size="sm" onClick={handleCopyApiKey}>
-                    Copy key
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Create a new key to authenticate the player.
-              </p>
-            )}
-
-            <div className="space-y-2">
-              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Existing keys
-              </div>
-              {isApiKeysLoading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading keys...
-                </div>
-              ) : apiKeysError ? (
-                <p className="text-sm text-destructive">
-                  {apiKeysError instanceof Error ? apiKeysError.message : 'Failed to load API keys'}
-                </p>
-              ) : playerApiKeys.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No keys created for this player.</p>
-              ) : (
-                <div className="space-y-2">
-                  {playerApiKeys.map((key) => (
-                    <div
-                      key={key.id}
-                      className="flex items-center justify-between gap-3 rounded-md border border-border p-3"
-                    >
-                      <div>
-                        <div className="font-mono text-sm">{key.id}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Created {key.createdAt ? formatDate(key.createdAt) : '—'}
-                          {key.expiresAt ? ` · Expires ${formatDate(key.expiresAt)}` : ''}
-                        </div>
-                      </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        disabled={isDeletingApiKey}
-                        onClick={() => openDeleteKeyDialog(key)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {apiKeyError && <p className="text-sm text-destructive">{apiKeyError}</p>}
-            {createApiKeyMutation.error && !apiKeyError && (
-              <p className="text-sm text-destructive">
-                {createApiKeyMutation.error instanceof Error
-                  ? createApiKeyMutation.error.message
-                  : 'Failed to create API key'}
-              </p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button onClick={handleCreateApiKey} disabled={isCreatingApiKey || !playerForKeys}>
-              {isCreatingApiKey && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create API key
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={deleteKeyDialogOpen} onOpenChange={handleDeleteKeyDialogOpenChange}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete API key</AlertDialogTitle>
-            <AlertDialogDescription>
-              {keyToDelete
-                ? `This will permanently delete API key ${keyToDelete.id}. This action cannot be undone.`
-                : 'This action cannot be undone.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {deleteApiKeyMutation.error && (
-            <p className="text-sm text-destructive">
-              {deleteApiKeyMutation.error instanceof Error
-                ? deleteApiKeyMutation.error.message
-                : 'Failed to delete API key'}
-            </p>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingApiKey}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDeleteKey} disabled={isDeletingApiKey}>
-              {isDeletingApiKey ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

@@ -95,54 +95,72 @@ export type ListPlayersResponse = z.infer<typeof ListPlayersResponse>;
 
 // Telemetry
 const BaseTelemetrySchema = z.object({
-  id: z.string(),
-  timestamp: z.date(),
-  metadata: z.object({
-    playerId: z.string(),
-  })
+  timestamp: z.preprocess(
+    (value) =>
+      typeof value === "number" ? new Date(value * 1000) : value,
+    z.date().refine((d) => !isNaN(d.getTime()), {
+      message: "Invalid timestamp",
+    })
+  ),
+  tags: z.record(z.string(), z.string()),
 });
 
 export const CpuReadingSchema = BaseTelemetrySchema.extend({
-  usage_system: z.number(),
-  usage_user: z.number(),
-  usage_idle: z.number()
+  fields: z.object({
+    usage_system: z.number(),
+    usage_user: z.number(),
+    usage_idle: z.number()
+  })
 });
 
 export type CpuReading = z.infer<typeof CpuReadingSchema>;
 
 export const MemoryReadingSchema = BaseTelemetrySchema.extend({
-  used_percent: z.number()
+  fields: z.object({
+    used_percent: z.number()
+  })
 });
 
 export type MemoryReading = z.infer<typeof MemoryReadingSchema>;
 
 export const StorageReadingSchema = BaseTelemetrySchema.extend({
-  used_percent: z.number()
+  fields: z.object({
+    used_percent: z.number()
+  })
 });
 
 export type StorageReading = z.infer<typeof StorageReadingSchema>;
 
 export const UptimeReadingSchema = BaseTelemetrySchema.extend({
-  uptime_seconds: z.number()
+  fields: z.object({
+    uptime_seconds: z.number()
+  })
 });
 
 export type UptimeReading = z.infer<typeof UptimeReadingSchema>;
 
 export const LogEntrySchema = BaseTelemetrySchema.extend({
   level: z.enum(['debug', 'info', 'warn', 'error', 'fatal']),
-  message: z.string()
+  fields: z.object({
+    message: z.string()
+  })
 });
 
 export type LogEntry = z.infer<typeof LogEntrySchema>;
 
-const FieldsSchema = z.record(z.string(), z.number());
 const TagsSchema = z.record(z.string(), z.string());
 
 const MetricSchema = z.object({
-  name: z.enum(['cpu', 'memory', 'storage', 'uptime', 'log']),
-  timestamp: z.number(),
+  name: z.enum(['cpu', 'mem', 'disk', 'system', 'log']),
+  timestamp: z.preprocess(
+    (value) =>
+      typeof value === "number" ? new Date(value * 1000) : value,
+    z.date().refine((d) => !isNaN(d.getTime()), {
+      message: "Invalid timestamp",
+    })
+  ),
   tags: TagsSchema,
-  fields: FieldsSchema,
+  fields: z.record(z.string(), z.number().or(z.string())),
 });
 
 export const MetricsPayloadSchema = z.object({
