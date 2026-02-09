@@ -20,7 +20,8 @@ export async function telemetryRoutes(
   fastify.addHook('preHandler', authenticateApiKey)
 
   fastify.post('/', async (request, reply) => {
-
+    //console.log(JSON.stringify(request.body, null, 2))
+    //console.log(JSON.stringify(request.apiKey, null, 2))
     const parseResult = MetricsPayloadSchema.safeParse(request.body)
     if (!parseResult.success) {
       logger.warn({error: z.prettifyError(parseResult.error)}, 'Invalid payload')
@@ -28,18 +29,16 @@ export async function telemetryRoutes(
       return
     }
     const payload: MetricsPayload = parseResult.data
-    //console.log(JSON.stringify(payload, null, 2))
-    //console.log(JSON.stringify(request.apiKey, null, 2))
     for (const metric of payload.metrics) {
 
-      if (metric.tags.host !== request.apiKey?.record?.metadata.ownerId) {
+      if (metric.tags.host !== request.apiKey?.record?.metadata.name) {
         reply.code(400).send({ error: 'Invalid host' })
         return
       }
 
       metric.tags = {
         ...metric.tags,
-        ownerId: request.apiKey?.record?.metadata.ownerId as string,
+        group: request.apiKey?.record?.metadata.ownerId as string,
       }
 
       switch (metric.name) {

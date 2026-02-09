@@ -33,7 +33,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         plugins={[
           {
             name: 'Tanstack Router',
-            render: <TanStackRouterDevtoolsPanel />,
+            render: (<TanStackRouterDevtoolsPanel />),
           },
           TanStackQueryDevtools,
         ]}

@@ -138,7 +138,7 @@ const SystemMetricSchema = z.object({
   timestamp: TimestampSchema,
   tags: TagsSchema,
   fields: z.object({
-    uptime_seconds: z.number(),
+    uptime: z.number(),
   }),
 });
 

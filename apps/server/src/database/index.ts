@@ -55,16 +55,16 @@ export async function closeConnection(): Promise<void> {
 
 /** Time-series collections with their TTL in seconds */
 const TIMESERIES_COLLECTIONS = {
-  cpu: 60 * 60 * 24 * 3, // 3 days
-  memory: 60 * 60 * 24 * 3, // 3 days
-  disk: 60 * 60 * 24 * 3, // 3 days
-  system: 60 * 60 * 24 * 1, // 1 day
-  logs: 60 * 60 * 24 * 7, // 7 days
+  cpu: 60 * 60 * 1, // 1 hour
+  memory: 60 * 60 * 1, // 1 hour
+  disk: 60 * 60 * 1, // 1 hour
+  system: 60 * 60 * 1, // 1 hour
+  logs: 60 * 60 * 1, // 1 hour
 } as const;
 
 export async function initializeTelemetryCollections(): Promise<void> {
   try {
-    const db = await getDatabase('telemetry');
+    const db = await getDatabase(config.MONGO_DB_NAME);
 
     for (const [collectionName, expireAfterSeconds] of Object.entries(TIMESERIES_COLLECTIONS)) {
       try {
@@ -110,7 +110,7 @@ export async function initializeTelemetryCollections(): Promise<void> {
  */
 export async function initializeSystemCollections(): Promise<void> {
   try {
-    const db = await getDatabase('telemetry');
+    const db = await getDatabase(config.MONGO_DB_NAME);
 
     // Initialize alerts collection
     try {
@@ -119,16 +119,18 @@ export async function initializeSystemCollections(): Promise<void> {
         await db.createCollection('alerts');
         await db.collection('alerts').createIndex(
           { 
+            group: 1,
             host: 1, 
             type: 1, 
             resolvedAt: 1 
           },
           { 
-            unique: true, 
-            partialFilterExpression: { 
-              resolvedAt: null
-            }
+            unique: true
           });
+        await db.collection('alerts').createIndex(
+          { resolvedAt: 1 },
+          { expireAfterSeconds: 60 * 60 * 24 * 7 } // 30 days
+        )
         logger.info('Created alerts collection with indexes');
       } else {
         logger.debug('Alerts collection already exists, skipping creation');
@@ -225,6 +227,452 @@ export async function initializeSystemCollections(): Promise<void> {
     logger.info('System collections initialized successfully');
   } catch (error) {
     logger.error({ error }, 'Failed to initialize system collections');
+    throw error;
+  }
+}
+
+export async function alerts(): Promise<void> {
+  const db = await getDatabase(config.MONGO_DB_NAME);
+  try {
+
+    // Find all hosts that have been seen in the last minute
+    const alive = await db.collection('cpu').aggregate([
+      {
+        $match: {
+          timestamp: { $gte: new Date(Date.now() - 60 * 1000) } // 1 minute
+        }
+      },
+      {
+        $group: {
+          _id: {
+            host: "$tags.host",
+            group: "$tags.group"
+          }
+        }
+      }
+    ]).toArray()
+
+    // Resolve any deadman alerts for hosts that have been seen in the last minute
+    if (alive.length > 0) {
+      await db.collection('alerts').updateMany(
+        {
+          type: "deadman",
+          resolvedAt: null,
+          $or: alive.map(a => ({
+            host: a._id.host,
+            group: a._id.group
+          }))
+        },
+        {
+          $set: {
+            resolvedAt: new Date()
+          }
+        }
+      )
+      logger.info(`Resolved ${alive.length} deadman alerts`);
+    } else {
+      logger.info('No deadman alerts to resolve');
+    }
+    
+    // Resolve any cpu alerts
+    const cpuAlerts = await db.collection('cpu').aggregate(
+      [
+        {
+          $match: {
+            timestamp: { $gte: new Date(Date.now() - 6 * 60 * 1000) },
+            "fields.usage_idle": { $gt: 80 } // below threshold
+          }
+        },
+        {
+          $group: {
+            _id: {
+              group: "$tags.group",
+              host: "$tags.host"
+            }
+          }
+        }
+      ]
+    ).toArray();
+
+    if (cpuAlerts.length > 0) {
+      await db.collection('alerts').updateMany(
+        {
+          type: "cpu",
+          resolvedAt: null,
+          $or: cpuAlerts.map(r => ({
+            group: r._id.group,
+            host: r._id.host, 
+          }))
+        },
+        {
+          $set: { resolvedAt: new Date() }
+        }
+      )
+    }
+
+    const healthyHosts = await db.collection('memory').aggregate([
+      {
+        $match: {
+          timestamp: { $gte: new Date(Date.now() - 6 * 60 * 1000) },
+          "fields.used_percent": { $lt: 85 } // 85 below threshold
+        }
+      },
+      {
+        $group: {
+          _id: {
+            host: "$tags.host",
+            group: "$tags.group"
+          }
+        }
+      }
+    ]).toArray()
+
+    if (healthyHosts.length > 0) {
+      await db.collection('alerts').updateMany(
+        {
+          type: "memory",
+          resolvedAt: null,
+          $or: healthyHosts.map(h => ({
+            group: h._id.group,
+            host: h._id.host, 
+          }))
+        },
+        {
+          $set: { resolvedAt: new Date() }
+        }
+      )
+    }
+
+    const diskAlerts = await db.collection('disk').aggregate(
+      [
+        {
+          $match: {
+            timestamp: { $gte: new Date(Date.now() - 6 * 60 * 1000) },
+            "fields.used_percent": { $lt: 90 } // below threshold
+          }
+        }
+      ]
+    ).toArray()
+
+    if (diskAlerts.length > 0) {
+      await db.collection('alerts').updateMany(
+        {
+          type: "disk",
+          resolvedAt: null,
+          $or: diskAlerts.map(d => ({
+            group: d._id.group,
+            host: d._id.host, 
+          }))
+        },
+        {
+          $set: { resolvedAt: new Date() }
+        }
+      )
+    }
+    logger.info('Alerts updated successfully');
+  } catch (error) {
+    logger.error({ error }, 'Failed to update alerts');
+    throw error;
+  }
+
+  try {
+    // deadman alerts
+    await db.collection('cpu').aggregate(
+      [
+        {
+          $group: {
+            _id: {
+              group: "$tags.group",
+              host: "$tags.host"
+            },
+            lastSeen: {
+              $max: "$timestamp"
+            }
+          }
+        },
+        {
+          $match: {
+            $expr: {
+              $gt: [
+                {
+                  $subtract: ["$$NOW", "$lastSeen"]
+                },
+                5 * 60 * 1000 // 5 minutes
+              ]
+            }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            group: "$_id.group",
+            host: "$_id.host",
+            type: "deadman",
+            lastSeen: 1,
+            firstDetectedAt: "$$NOW",
+            resolvedAt: null
+          }
+        },
+        {
+          $merge: {
+            into: "alerts",
+            on: ["group", "host", "type", "resolvedAt"],
+            whenMatched: "keepExisting",
+            whenNotMatched: "insert"
+          }
+        }
+      ]
+    ).toArray();
+
+    // cpu alerts
+    await db.collection('cpu').aggregate(
+      [
+        // Last 5 minutes
+        {
+          $match: {
+            timestamp: {
+              $gte: new Date(Date.now() - 5 * 60 * 1000)
+            }
+          }
+        },
+        // Compute cpu_used
+        {
+          $addFields: {
+            cpu_used: {
+              $add: [
+                "$fields.usage_user",
+                "$fields.usage_system"
+              ]
+            }
+          }
+        },
+        // Keep only high-CPU samples
+        {
+          $match: {
+            cpu_used: {
+              $gt: 90
+            }
+          }
+        },
+        // Count high samples per host/group
+        {
+          $group: {
+            _id: {
+              group: "$tags.group",
+              host: "$tags.host"
+            },
+            high_count: {
+              $sum: 1
+            },
+            max_cpu: {
+              $max: "$cpu_used"
+            },
+            firstDetectedAt: {
+              $min: "$timestamp"
+            },
+            lastSeen: {
+              $max: "$timestamp"
+            }
+          }
+        },
+        // Threshold: at least 6 samples in 5 minutes
+        {
+          $match: {
+            high_count: {
+              $gte: 6
+            }
+          }
+        },
+        // Shape for alerts
+        {
+          $project: {
+            _id: 0,
+            group: "$_id.group",
+            host: "$_id.host",
+            type: "cpu",
+            firstDetectedAt: 1,
+            lastSeen: 1,
+            resolvedAt: null
+          }
+        },
+        {
+          $merge: {
+            into: "alerts",
+            on: ["group", "host", "type", "resolvedAt"],
+            whenMatched: "keepExisting",
+            whenNotMatched: "insert"
+          }
+        }
+      ]
+    ).toArray();
+
+    // memory alerts
+    await db.collection('memory').aggregate(
+      [
+        // Restrict to recent samples
+        {
+          $match: {
+            timestamp: {
+              $gte: new Date(Date.now() - 5 * 60 * 1000)
+            },
+            "fields.used_percent": { $type: "number" }
+          }
+        },
+      
+        // Normalize + clamp memory usage
+        {
+          $addFields: {
+            mem_used: {
+              $min: [
+                100,
+                { $max: [0, "$fields.used_percent"] }
+              ]
+            }
+          }
+        },
+      
+        // Keep only high-memory samples
+        {
+          $match: {
+            mem_used: { $gte: 85 } // 85
+          }
+        },
+      
+        // aggregate per host/group
+        {
+          $group: {
+            _id: {
+              group: "$tags.group",
+              host: "$tags.host"
+            },
+            high_count: { $sum: 1 },
+            max_mem: { $max: "$mem_used" },
+            firstDetectedAt: { $min: "$timestamp" },
+            lastSeen: { $max: "$timestamp" }
+          }
+        },
+      
+        // Alert threshold (N samples in window)
+        {
+          $match: {
+            high_count: { $gte: 2 }
+          }
+        },
+      
+        // Shape for alerts
+        {
+          $project: {
+            _id: 0,
+            group: "$_id.group",
+            host: "$_id.host",
+            type: "memory",
+            firstDetectedAt: 1,
+            lastSeen: 1,
+            resolvedAt: null
+          }
+        },
+        {
+          $merge: {
+            into: "alerts",
+            on: ["group", "host", "type", "resolvedAt"],
+            whenMatched: "keepExisting",
+            whenNotMatched: "insert"
+          }
+        }
+      ]
+      
+    ).toArray();
+
+    // disk alerts
+    await db.collection('disk').aggregate(
+      [
+        // Restrict to recent samples
+        {
+          $match: {
+            timestamp: {
+              $gte: new Date(
+                Date.now() - 15 * 60 * 1000
+              )
+            },
+            "fields.used_percent": {
+              $type: "number"
+            }
+          }
+        },
+        // Normalize + clamp disk usage
+        {
+          $addFields: {
+            disk_used: {
+              $min: [
+                100,
+                {
+                  $max: [0, "$fields.used_percent"]
+                }
+              ]
+            }
+          }
+        },
+        // Keep only high samples
+        {
+          $match: {
+            disk_used: {
+              $gte: 90
+            }
+          }
+        },
+        // aggregate per host/group
+        {
+          $group: {
+            _id: {
+              group: "$tags.group",
+              host: "$tags.host"
+            },
+            high_count: {
+              $sum: 1
+            },
+            max_disk: {
+              $max: "$disk_used"
+            },
+            firstDetectedAt: {
+              $min: "$timestamp"
+            },
+            lastSeen: {
+              $max: "$timestamp"
+            }
+          }
+        },
+        // Alert threshold (N samples in window)
+        {
+          $match: {
+            high_count: {
+              $gte: 2
+            }
+          }
+        },
+        // Shape for alerts
+        {
+          $project: {
+            _id: 0,
+            group: "$_id.group",
+            host: "$_id.host",
+            type: "disk",
+            firstDetectedAt: 1,
+            lastSeen: 1,
+            resolvedAt: null
+          }
+        },
+        {
+          $merge: {
+            into: "alerts",
+            on: ["group", "host", "type", "resolvedAt"],
+            whenMatched: "keepExisting",
+            whenNotMatched: "insert"
+          }
+        }
+      ]
+    ).toArray();
+  } catch (error) {
+    logger.error({ error }, 'Failed to update alerts');
     throw error;
   }
 }

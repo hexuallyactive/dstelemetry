@@ -3,7 +3,7 @@ import compress from '@fastify/compress';
 import { logger } from "./logger.js";
 import fastify, { type FastifyRequest } from "fastify";
 import { registerRoutes } from "./routes/index.js";
-import { initializeTelemetryCollections, initializeSystemCollections, getMongoClient } from "./database/index.js";
+import { initializeTelemetryCollections, initializeSystemCollections, getMongoClient, alerts } from "./database/index.js";
 import { fileURLToPath } from "url";
 import path from "path";
 import fastifyStatic from "@fastify/static";
@@ -59,8 +59,9 @@ async function main() {
     decorateReply: false,     // avoid reply.sendFile conflicts
   });
 
-  cron.schedule('* * * * *', () => {
-    console.log('running a task every minute');
+  cron.schedule('* * * * *', async() => {
+    console.log('Running alerts cron job');
+    await alerts();
   });
 
   app.listen({ port: config.HTTP_PORT, host: '0.0.0.0' }, (err, address) => {
