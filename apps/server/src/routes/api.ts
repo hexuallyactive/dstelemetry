@@ -326,4 +326,49 @@ export async function apiRoutes(
       reply.code(500).send({ error: 'Failed to delete device' })
     }
   })
+
+  // POST /api/devices/:id/rotate-key - Rotate a device's API key
+  fastify.post<{
+    Params: DeviceParams
+    Reply: DeviceResponse | { error: string }
+  }>('/devices/:id/rotate-key', async (request, reply) => {
+    try {
+      const { id } = request.params
+      const device = await devicesCollection.findOne({ id })
+      if (!device) {
+        reply.code(404).send({ error: 'Device not found' })
+        return
+      }
+
+      // Revoke the old API key
+      if (device.apiKeyId) {
+        await keyManager.revoke(device.apiKeyId)
+      }
+
+      // Create a new API key
+      const { key, record: apiKeyRecord } = await keyManager.create({
+        name: `${device.hostname}`,
+        description: `Telemetry API key for ${device.hostname}`,
+        scopes: ['write'],
+        tags: ['production'],
+        ownerId: device.groupId,
+      })
+
+      if (!apiKeyRecord) {
+        reply.code(500).send({ error: 'Failed to create new API key' })
+        return
+      }
+
+      const updatedDevice = await devicesCollection.findOneAndUpdate(
+        { id },
+        { $set: { apiKey: key, apiKeyId: apiKeyRecord.id, updatedAt: new Date() } },
+        { returnDocument: 'after' }
+      )
+
+      reply.send(updatedDevice!)
+    } catch (error) {
+      logger.error({ error }, 'Error rotating API key')
+      reply.code(500).send({ error: 'Failed to rotate API key' })
+    }
+  })
 }

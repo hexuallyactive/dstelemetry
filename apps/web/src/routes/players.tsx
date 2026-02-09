@@ -50,7 +50,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Loader2, Pencil, Plus, XCircle } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Copy, Loader2, Pencil, Plus, RefreshCw, XCircle } from 'lucide-react'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 export const Route = createFileRoute('/players')({
   component: RouteComponent,
@@ -154,6 +155,16 @@ async function deleteDevice(id: string): Promise<void> {
   }
 }
 
+async function rotateApiKey(id: string): Promise<Device> {
+  const response = await fetch(`/api/devices/${id}/rotate-key`, {
+    method: 'POST',
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new Error(data?.error ?? 'Failed to rotate API key')
+  }
+  return coerceDevice(data)
+}
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -169,6 +180,8 @@ function RouteComponent() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
 
   const {
     data: devices = [],
@@ -216,6 +229,12 @@ function RouteComponent() {
     },
   })
 
+  const rotateMutation = useMutation({
+    mutationFn: rotateApiKey,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['devices'] })
+    },
+  })
 
   const form = useForm({
     defaultValues: {
@@ -346,6 +365,24 @@ function RouteComponent() {
     }
   }
 
+  function toggleRow(deviceId: string) {
+    setExpandedRows((prev) => {
+      const next = new Set(prev)
+      if (next.has(deviceId)) {
+        next.delete(deviceId)
+      } else {
+        next.add(deviceId)
+      }
+      return next
+    })
+  }
+
+  async function copyApiKey(apiKey: string, deviceId: string) {
+    await navigator.clipboard.writeText(apiKey)
+    setCopiedKey(deviceId)
+    setTimeout(() => setCopiedKey(null), 2000)
+  }
+
 
   if (isDevicesLoading || isGroupsLoading) {
     return (
@@ -423,44 +460,121 @@ function RouteComponent() {
                   </TableRow>
                 )}
                 {devices.map((device) => (
-                  <TableRow key={device.id}>
-                    <TableCell className="font-medium">{device.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {device.hostname.toUpperCase()}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {groupMap.get(device.groupId) ?? device.groupId}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {device.location || '—'}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {formatDate(device.createdAt)}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {formatDate(device.updatedAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditDialog(device)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          disabled={isDeleting}
-                          onClick={() => openDeleteDialog(device)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <Collapsible
+                    key={device.id}
+                    open={expandedRows.has(device.id)}
+                    onOpenChange={() => toggleRow(device.id)}
+                    asChild
+                  >
+                    <>
+                      <TableRow className="cursor-pointer hover:bg-muted/50">
+                        <CollapsibleTrigger asChild>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {expandedRows.has(device.id) ? (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              )}
+                              {device.name}
+                            </div>
+                          </TableCell>
+                        </CollapsibleTrigger>
+                        <TableCell className="text-muted-foreground">
+                          {device.hostname.toUpperCase()}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {groupMap.get(device.groupId) ?? device.groupId}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground">
+                          {device.location || '—'}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground">
+                          {formatDate(device.createdAt)}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground">
+                          {formatDate(device.updatedAt)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openEditDialog(device)
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={isDeleting}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openDeleteDialog(device)
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      <CollapsibleContent asChild>
+                        <TableRow className="bg-muted/30 hover:bg-muted/30">
+                          <TableCell colSpan={7} className="py-4">
+                            <div className="pl-6 space-y-3">
+                              <div className="text-sm font-medium text-foreground">API Key</div>
+                              <div className="flex items-center gap-3">
+                                <code className="flex-1 bg-background border rounded-md px-3 py-2 text-sm font-mono text-muted-foreground truncate">
+                                  {device.apiKey || 'No API key generated'}
+                                </code>
+                                {device.apiKey && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => copyApiKey(device.apiKey, device.id)}
+                                  >
+                                    {copiedKey === device.id ? (
+                                      <>
+                                        <Check className="h-4 w-4 text-green-500" />
+                                        Copied
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="h-4 w-4" />
+                                        Copy
+                                      </>
+                                    )}
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={rotateMutation.isPending}
+                                  onClick={() => rotateMutation.mutate(device.id)}
+                                >
+                                  {rotateMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="h-4 w-4" />
+                                  )}
+                                  Rotate
+                                </Button>
+                              </div>
+                              {device.apiKeyId && (
+                                <p className="text-xs text-muted-foreground">
+                                  Key ID: {device.apiKeyId}
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      </CollapsibleContent>
+                    </>
+                  </Collapsible>
                 ))}
               </TableBody>
             </Table>
