@@ -28,8 +28,7 @@ const envSchema = z
     url.password = encodeURIComponent(MONGO_PASSWORD);
     return {
       ...rest,
-      //MONGO_URI: url.toString(),
-      MONGO_URI: 'mongodb://localhost:27017',
+      MONGO_URI: url.toString(),
     };
   });
 
