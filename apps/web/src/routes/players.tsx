@@ -179,6 +179,8 @@ function RouteComponent() {
   const [editingDevice, setEditingDevice] = useState<Device | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null)
+  const [rotateDialogOpen, setRotateDialogOpen] = useState(false)
+  const [deviceToRotate, setDeviceToRotate] = useState<Device | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
@@ -362,6 +364,25 @@ function RouteComponent() {
     setDeleteDialogOpen(open)
     if (!open) {
       setDeviceToDelete(null)
+    }
+  }
+
+  function openRotateDialog(device: Device) {
+    setDeviceToRotate(device)
+    setRotateDialogOpen(true)
+  }
+
+  async function handleConfirmRotate() {
+    if (!deviceToRotate) return
+    await rotateMutation.mutateAsync(deviceToRotate.id)
+    setRotateDialogOpen(false)
+    setDeviceToRotate(null)
+  }
+
+  function handleRotateDialogOpenChange(open: boolean) {
+    setRotateDialogOpen(open)
+    if (!open) {
+      setDeviceToRotate(null)
     }
   }
 
@@ -554,13 +575,9 @@ function RouteComponent() {
                                   variant="outline"
                                   size="sm"
                                   disabled={rotateMutation.isPending}
-                                  onClick={() => rotateMutation.mutate(device.id)}
+                                  onClick={() => openRotateDialog(device)}
                                 >
-                                  {rotateMutation.isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <RefreshCw className="h-4 w-4" />
-                                  )}
+                                  <RefreshCw className="h-4 w-4" />
                                   Rotate
                                 </Button>
                               </div>
@@ -760,6 +777,32 @@ function RouteComponent() {
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete} disabled={isDeleting}>
               {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={rotateDialogOpen} onOpenChange={handleRotateDialogOpenChange}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rotate API key</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deviceToRotate
+                ? `This will generate a new API key for ${deviceToRotate.name} and immediately disable the current key. Any devices using the current key will need to be updated.`
+                : 'This will disable the current API key.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {rotateMutation.error && (
+            <p className="text-sm text-destructive">
+              {rotateMutation.error instanceof Error
+                ? rotateMutation.error.message
+                : 'Failed to rotate API key'}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={rotateMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRotate} disabled={rotateMutation.isPending}>
+              {rotateMutation.isPending ? 'Rotating...' : 'Rotate key'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
