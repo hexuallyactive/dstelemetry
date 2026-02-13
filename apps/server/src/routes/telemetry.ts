@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import { authenticateApiKey } from '../middleware/auth.js'
-import { MetricsPayloadSchema, type CpuMetric, type MemMetric, type MetricsPayload, type DiskMetric, type SystemMetric, type LogMetric } from '@dstelemetry/types'
+import { MetricsPayloadSchema, type CpuMetric, type MemMetric, type MetricsPayload, type DiskMetric, type SystemMetric, type LogMetric, type ProcessMetric } from '@dstelemetry/types'
 import { getDatabase } from '../database/index.ts'
 import { logger } from '../logger.ts'
 import { z } from 'zod'
@@ -16,6 +16,7 @@ export async function telemetryRoutes(
   const diskCollection = db.collection<DiskMetric>('disk')
   const systemCollection = db.collection<SystemMetric>('system')
   const logCollection = db.collection<LogMetric>('log')
+  const procstatCollection = db.collection<ProcessMetric>('procstat')
   // Apply authentication middleware to all routes in this plugin
   fastify.addHook('preHandler', authenticateApiKey)
 
@@ -53,6 +54,9 @@ export async function telemetryRoutes(
           break;
         case 'system':
           await systemCollection.insertOne(metric)
+          break;
+        case 'procstat':
+          await procstatCollection.insertOne(metric)
           break;
         case 'log':
           await logCollection.insertOne(metric)

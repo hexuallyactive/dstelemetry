@@ -142,6 +142,15 @@ const SystemMetricSchema = z.object({
   }),
 });
 
+const ProcessMetricSchema = z.object({
+  name: z.literal('procstat'),
+  timestamp: TimestampSchema,
+  tags: TagsSchema,
+  fields: z.object({
+    created_at: z.number(),
+  }),
+});
+
 const LogMetricSchema = z.object({
   name: z.literal('log'),
   timestamp: TimestampSchema,
@@ -157,6 +166,7 @@ export const MetricSchema = z.discriminatedUnion('name', [
   MemMetricSchema,
   DiskMetricSchema,
   SystemMetricSchema,
+  ProcessMetricSchema,
   LogMetricSchema,
 ]);
 
@@ -167,6 +177,7 @@ export type CpuMetric = Extract<Metric, { name: 'cpu' }>;
 export type MemMetric = Extract<Metric, { name: 'mem' }>;
 export type DiskMetric = Extract<Metric, { name: 'disk' }>;
 export type SystemMetric = Extract<Metric, { name: 'system' }>;
+export type ProcessMetric = Extract<Metric, { name: 'procstat' }>;
 export type LogMetric = Extract<Metric, { name: 'log' }>;
 
 export const MetricsPayloadSchema = z.object({

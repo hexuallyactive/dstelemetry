@@ -18,7 +18,7 @@ const envSchema = z
     MONGO_PASSWORD: z.string(),
     MONGO_DB_NAME: z.string().default('telemetry'),
     API_RATE_LIMIT: z.coerce.number().default(150),
-    HTTP_PORT: z.coerce.number().default(4000),
+    HTTP_PORT: z.coerce.number().default(3000),
   })
   .transform((config) => {
     // construct the full mongo URI with username and password

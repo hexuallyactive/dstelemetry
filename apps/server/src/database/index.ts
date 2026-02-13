@@ -55,11 +55,12 @@ export async function closeConnection(): Promise<void> {
 
 /** Time-series collections with their TTL in seconds */
 const TIMESERIES_COLLECTIONS = {
-  cpu: 60 * 60 * 1, // 1 hour
-  memory: 60 * 60 * 1, // 1 hour
-  disk: 60 * 60 * 1, // 1 hour
-  system: 60 * 60 * 1, // 1 hour
-  logs: 60 * 60 * 1, // 1 hour
+  cpu: 60 * 60 * 24 * 4, // 1 day
+  memory: 60 * 60 * 24 * 4, // 4 day
+  disk: 60 * 60 * 24 * 1, // 4 day
+  system: 60 * 60 *  15, // 15 minutes
+  procstat: 60 * 60 * 15, // 15 minutes
+  logs: 60 * 60 * 24 * 7, // 4 days
 } as const;
 
 export async function initializeTelemetryCollections(): Promise<void> {
@@ -257,7 +258,7 @@ export async function alerts(): Promise<void> {
       await db.collection('alerts').updateMany(
         {
           type: "deadman",
-          resolvedAt: null,
+          resolvedAt: "ACTIVE",
           $or: alive.map(a => ({
             host: a._id.host,
             group: a._id.group
@@ -269,7 +270,7 @@ export async function alerts(): Promise<void> {
           }
         }
       )
-      logger.info(`Resolved ${alive.length} deadman alerts`);
+      //logger.info(`Resolved ${alive.length} deadman alerts`);
     } else {
       logger.info('No deadman alerts to resolve');
     }
@@ -298,7 +299,7 @@ export async function alerts(): Promise<void> {
       await db.collection('alerts').updateMany(
         {
           type: "cpu",
-          resolvedAt: null,
+          resolvedAt: "ACTIVE",
           $or: cpuAlerts.map(r => ({
             group: r._id.group,
             host: r._id.host, 
@@ -331,7 +332,7 @@ export async function alerts(): Promise<void> {
       await db.collection('alerts').updateMany(
         {
           type: "memory",
-          resolvedAt: null,
+          resolvedAt: "ACTIVE",
           $or: healthyHosts.map(h => ({
             group: h._id.group,
             host: h._id.host, 
@@ -358,7 +359,7 @@ export async function alerts(): Promise<void> {
       await db.collection('alerts').updateMany(
         {
           type: "disk",
-          resolvedAt: null,
+          resolvedAt: "ACTIVE",
           $or: diskAlerts.map(d => ({
             group: d._id.group,
             host: d._id.host, 
@@ -410,7 +411,7 @@ export async function alerts(): Promise<void> {
             type: "deadman",
             lastSeen: 1,
             firstDetectedAt: "$$NOW",
-            resolvedAt: null
+            resolvedAt: "ACTIVE"
           }
         },
         {
@@ -450,7 +451,7 @@ export async function alerts(): Promise<void> {
         {
           $match: {
             cpu_used: {
-              $gt: 90
+              $gte: 90
             }
           }
         },
@@ -492,7 +493,7 @@ export async function alerts(): Promise<void> {
             type: "cpu",
             firstDetectedAt: 1,
             lastSeen: 1,
-            resolvedAt: null
+            resolvedAt: "ACTIVE"
           }
         },
         {
@@ -568,7 +569,7 @@ export async function alerts(): Promise<void> {
             type: "memory",
             firstDetectedAt: 1,
             lastSeen: 1,
-            resolvedAt: null
+            resolvedAt: "ACTIVE"
           }
         },
         {
@@ -658,7 +659,7 @@ export async function alerts(): Promise<void> {
             type: "disk",
             firstDetectedAt: 1,
             lastSeen: 1,
-            resolvedAt: null
+            resolvedAt: "ACTIVE"
           }
         },
         {
