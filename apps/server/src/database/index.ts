@@ -238,7 +238,7 @@ export async function initializeSystemCollections(): Promise<void> {
             unique: true
           });
         await db.collection('process').createIndex(
-          { updated_at: 1 },
+          { updatedAt: 1 },
           { expireAfterSeconds: 60 * 5 } // 5 minutes
         )
         logger.info('Created process collection with indexes');
@@ -268,7 +268,7 @@ export async function initializeSystemCollections(): Promise<void> {
             unique: true
           });
         await db.collection('system').createIndex(
-          { updated_at: 1 },
+          { updatedAt: 1 },
           { expireAfterSeconds: 60 * 5 } // 5 minutes
         )
         logger.info('Created system collection with indexes');

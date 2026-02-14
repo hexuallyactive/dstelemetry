@@ -78,7 +78,7 @@ export async function telemetryRoutes(
             // Always update uptime and updated_at
             $set: {
               uptime: uptimeSecondsFromNsBigInt(BigInt(metric.fields.created_at)),
-              updated_at: new Date()
+              updatedAt: new Date()
             }
           };
           
@@ -107,7 +107,7 @@ export async function telemetryRoutes(
             },
             $set: {
               uptime: metric.fields.uptime,
-              updated_at: new Date()
+              updatedAt: new Date()
             }
           };
           const options = {
