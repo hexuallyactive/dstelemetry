@@ -55,12 +55,10 @@ export async function closeConnection(): Promise<void> {
 
 /** Time-series collections with their TTL in seconds */
 const TIMESERIES_COLLECTIONS = {
-  cpu: 60 * 60 * 24 * 4, // 1 day
-  memory: 60 * 60 * 24 * 4, // 4 day
-  disk: 60 * 60 * 24 * 1, // 4 day
-  system: 60 * 60 *  15, // 15 minutes
-  procstat: 60 * 60 * 15, // 15 minutes
-  logs: 60 * 60 * 24 * 7, // 4 days
+  cpu: 60 * 60 * 24 * 7, // 7 days
+  memory: 60 * 60 * 24 * 7, // 7 days
+  disk: 60 * 60 * 24 * 7, // 7 days
+  logs: 60 * 60 * 24 * 7, // 7 days
 } as const;
 
 export async function initializeTelemetryCollections(): Promise<void> {
@@ -225,11 +223,73 @@ export async function initializeSystemCollections(): Promise<void> {
       }
     }
 
+    // Initialize process collection
+    try {
+      const existingProcess = await db.listCollections({ name: 'process' }).toArray();
+      if (existingProcess.length === 0) {
+        await db.createCollection('process');
+        await db.collection('process').createIndex(
+          { 
+            group: 1,
+            host: 1, 
+            executable: 1
+          },
+          { 
+            unique: true
+          });
+        await db.collection('process').createIndex(
+          { updated_at: 1 },
+          { expireAfterSeconds: 60 * 5 } // 5 minutes
+        )
+        logger.info('Created process collection with indexes');
+      } else {
+        logger.debug('Process collection already exists, skipping creation');
+      }
+    } catch (error: any) {
+      if (error.code === 48 || error.codeName === 'NamespaceExists') {
+        logger.debug('Process collection already exists, skipping creation');
+      } else {
+        logger.error({ error }, 'Failed to create process collection');
+        throw error;
+      }
+    }
+
+    // Initialize system collection
+    try {
+      const existingSystem = await db.listCollections({ name: 'system' }).toArray();
+      if (existingSystem.length === 0) {
+        await db.createCollection('system');
+        await db.collection('system').createIndex(
+          { 
+            group: 1,
+            host: 1
+          },
+          { 
+            unique: true
+          });
+        await db.collection('system').createIndex(
+          { updated_at: 1 },
+          { expireAfterSeconds: 60 * 5 } // 5 minutes
+        )
+        logger.info('Created system collection with indexes');
+      } else {
+        logger.debug('System collection already exists, skipping creation');
+      }
+    } catch (error: any) {
+      if (error.code === 48 || error.codeName === 'NamespaceExists') {
+        logger.debug('System collection already exists, skipping creation');
+      } else {
+        logger.error({ error }, 'Failed to create system collection');
+        throw error;
+      }
+    }
+
     logger.info('System collections initialized successfully');
   } catch (error) {
     logger.error({ error }, 'Failed to initialize system collections');
     throw error;
   }
+  
 }
 
 export async function alerts(): Promise<void> {

@@ -184,4 +184,21 @@ export const MetricsPayloadSchema = z.object({
   metrics: z.array(MetricSchema),
 });
 
+export const ProcessSchema = z.object({
+  group: z.string(),
+  host: z.string(),
+  executable: z.string(),
+  uptime: z.number(),
+  updated_at: z.date(),
+});
+export type Process = z.infer<typeof ProcessSchema>;
+
+export const SystemSchema = z.object({
+  group: z.string(),
+  host: z.string(),
+  uptime: z.number(),
+  updated_at: z.date(),
+});
+export type System = z.infer<typeof SystemSchema>;
+
 export type MetricsPayload = z.infer<typeof MetricsPayloadSchema>;
