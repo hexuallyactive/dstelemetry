@@ -65,7 +65,7 @@ function PlayerRow({ player }: { player: Player }) {
               </div>
               <div className="flex flex-col">
                 <span className="font-normal text-foreground">{player.name}</span>
-                <span className="text-xs text-muted-foreground font-mono">{player.id}</span>
+                <span className="text-xs text-muted-foreground font-mono">{player.hostname}</span>
               </div>
             </div>
           </TableCell>

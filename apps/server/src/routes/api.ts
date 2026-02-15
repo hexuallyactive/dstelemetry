@@ -13,6 +13,7 @@ import type {
   ListDevicesResponse,
   Group,
   Device,
+  MonitoredDevice,
 } from '@dstelemetry/types'
 
 import { getDatabase } from '../database/index.js'
@@ -374,7 +375,7 @@ export async function apiRoutes(
 
   // GET /api/monitor - Get monitor data
   fastify.get<{
-    Reply: any | { error: string }
+    Reply: MonitoredDevice[] | { error: string }
   }>('/monitor', async (request, reply) => {
     try {
       const data = await db.collection('devices').aggregate(
@@ -547,9 +548,9 @@ export async function apiRoutes(
                 $dateToString: {
                   date: {
                     $max: [
-                      { $ifNull: [{ $arrayElemAt: ["$latestCpu.timestamp", 0] }, ISODate("1970-01-01")] },
-                      { $ifNull: [{ $arrayElemAt: ["$latestMem.timestamp", 0] }, ISODate("1970-01-01")] },
-                      { $ifNull: [{ $arrayElemAt: ["$latestDisk.timestamp", 0] }, ISODate("1970-01-01")] }
+                      { $ifNull: [{ $arrayElemAt: ["$latestCpu.timestamp", 0] }, new Date("1970-01-01")] },
+                      { $ifNull: [{ $arrayElemAt: ["$latestMem.timestamp", 0] }, new Date("1970-01-01")] },
+                      { $ifNull: [{ $arrayElemAt: ["$latestDisk.timestamp", 0] }, new Date("1970-01-01")] }
                     ]
                 },
                   format: "%Y-%m-%dT%H:%M:%S.000Z"
@@ -583,10 +584,10 @@ export async function apiRoutes(
                     message: {
                       $switch: {
                         branches: [
-                          { case: { $eq: ["$$a.type", "deadman"] }, then: "Device unreachable - connection timeout" },
+                          { case: { $eq: ["$$a.type", "deadman"] }, then: "Device unreachable" },
                           { case: { $eq: ["$$a.type", "cpu"] }, then: "CPU usage spike detected" },
                           { case: { $eq: ["$$a.type", "memory"] }, then: "Memory usage critically high" },
-                          { case: { $eq: ["$$a.type", "disk"] }, then: "Storage usage above 85% threshold" }
+                          { case: { $eq: ["$$a.type", "disk"] }, then: "Storage usage above threshold" }
                         ],
                         default: "Alert"
                       }
@@ -599,7 +600,7 @@ export async function apiRoutes(
           }
         ]
       ).toArray()
-      reply.send({ data })
+      reply.send(data as MonitoredDevice[])
     } catch (error) {
       logger.error({ error }, 'Error getting monitor data')
       reply.code(500).send({ error: 'Failed to get monitor data' })

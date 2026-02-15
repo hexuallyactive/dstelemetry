@@ -202,3 +202,32 @@ export const SystemSchema = z.object({
 export type System = z.infer<typeof SystemSchema>;
 
 export type MetricsPayload = z.infer<typeof MetricsPayloadSchema>;
+
+export const MonitoredDeviceSchema = z.object({
+  id: z.string(),
+  hostname: z.string(),
+  name: z.string(),
+  location: z.string(),
+  tenant: z.string(),
+  status: z.enum(["online", "warning", "offline"]),
+  uptime: z.number(),
+  storage: z.number(),
+  memory: z.number(),
+  cpu: z.number(),
+  lastSeen: z.string(),
+  alerts: z.array(z.object({
+    id: z.number(),
+    type: z.enum(["info", "warning", "error"]),
+    message: z.string(),
+    timestamp: z.string(),
+  })),
+  processes: z.array(
+    z.object({
+      executable: z.string(),
+      uptime: z.number(),
+      updatedAt: z.date(),
+    })
+  ),
+});
+
+export type MonitoredDevice = z.infer<typeof MonitoredDeviceSchema>;

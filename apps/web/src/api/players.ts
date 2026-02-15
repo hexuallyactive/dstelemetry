@@ -1,4 +1,6 @@
 // Types
+import type { Process } from '@dstelemetry/types'
+
 export interface Alert {
   id: number
   type: "info" | "warning" | "error"
@@ -8,6 +10,7 @@ export interface Alert {
 
 export interface Player {
   id: string
+  hostname: string
   name: string
   location: string
   tenant: string
@@ -18,6 +21,11 @@ export interface Player {
   cpu: number
   lastSeen: string // UTC datetime in ISO 8601 format
   alerts: Alert[]
+  processes: Process[]
+}
+
+function randomId(): string {
+  return crypto.randomUUID()
 }
 
 // Helper to generate a UTC datetime string relative to now
@@ -36,7 +44,8 @@ function secondsAgo(seconds: number): string {
 // Mock data
 const players: Player[] = [
   {
-    id: "PLAYER-001",
+    id: randomId(),
+    hostname: "DEVICE-001",
     name: "Lobby Display 1",
     location: "Main Building - Lobby",
     tenant: "Acme Corp",
@@ -46,11 +55,12 @@ const players: Player[] = [
     memory: 58,
     cpu: 32,
     lastSeen: minutesAgo(2),
-    alerts: [
-    ],
+    alerts: [],
+    processes: [],
   },
   {
-    id: "PLAYER-002",
+    id: randomId(),
+    hostname: "DEVICE-002",
     name: "Conference Room A",
     location: "Building A - Floor 3",
     tenant: "Acme Corp",
@@ -61,9 +71,11 @@ const players: Player[] = [
     cpu: 28,
     lastSeen: minutesAgo(1),
     alerts: [],
+    processes: [],
   },
   {
-    id: "PLAYER-003",
+    id: randomId(),
+    hostname: "DEVICE-003",
     name: "Cafeteria Display",
     location: "Main Building - Cafeteria",
     tenant: "TechStart Inc",
@@ -77,9 +89,11 @@ const players: Player[] = [
       { id: 1, type: "warning", message: "Storage usage above 85% threshold", timestamp: minutesAgo(10) },
       { id: 2, type: "warning", message: "CPU usage spike detected", timestamp: minutesAgo(25) },
     ],
+    processes: [],
   },
   {
-    id: "PLAYER-004",
+    id: randomId(),
+    hostname: "DEVICE-004",
     name: "Reception Display",
     location: "Building B - Entrance",
     tenant: "RetailMax",
@@ -94,9 +108,11 @@ const players: Player[] = [
       { id: 2, type: "error", message: "Heartbeat signal lost", timestamp: hoursAgo(2) },
       { id: 3, type: "info", message: "Last successful ping recorded", timestamp: hoursAgo(2) },
     ],
+    processes: [],
   },
   {
-    id: "PLAYER-005",
+    id: randomId(),
+    hostname: "DEVICE-005",
     name: "Elevator Display 1",
     location: "Main Building - Floor 1",
     tenant: "Acme Corp",
@@ -107,9 +123,11 @@ const players: Player[] = [
     cpu: 38,
     lastSeen: minutesAgo(3),
     alerts: [],
+    processes: [],
   },
   {
-    id: "PLAYER-006",
+    id: randomId(),
+    hostname: "DEVICE-006",
     name: "Parking Lot Sign",
     location: "Parking Structure - Level 1",
     tenant: "Acme Corp",
@@ -120,9 +138,11 @@ const players: Player[] = [
     cpu: 25,
     lastSeen: minutesAgo(1),
     alerts: [],
+    processes: [],
   },
   {
-    id: "PLAYER-007",
+    id: randomId(),
+    hostname: "DEVICE-007",
     name: "Warehouse Display",
     location: "Warehouse - Shipping Dock",
     tenant: "RetailMax",
@@ -135,9 +155,11 @@ const players: Player[] = [
     alerts: [
       { id: 1, type: "warning", message: "Memory usage critically high", timestamp: minutesAgo(5) },
     ],
+    processes: [],
   },
   {
-    id: "PLAYER-008",
+    id: randomId(),
+    hostname: "DEVICE-008",
     name: "Break Room Screen",
     location: "Building A - Floor 2",
     tenant: "Acme Corp",
@@ -150,9 +172,11 @@ const players: Player[] = [
     alerts: [
       { id: 1, type: "warning", message: "CPU usage above threshold", timestamp: minutesAgo(15) },
     ],
+    processes: [],
   },
   {
-    id: "PLAYER-009",
+    id: randomId(),
+    hostname: "DEVICE-009",
     name: "Outdoor Kiosk",
     location: "Main Building - Entrance",
     tenant: "TechStart Inc",
@@ -167,9 +191,11 @@ const players: Player[] = [
       { id: 2, type: "warning", message: "Memory usage high - 88%", timestamp: minutesAgo(45) },
       { id: 3, type: "warning", message: "CPU usage elevated - 78%", timestamp: minutesAgo(30) },
     ],
+    processes: [],
   },
   {
-    id: "PLAYER-010",
+    id: randomId(),
+    hostname: "DEVICE-010",
     name: "Training Room Display",
     location: "Building B - Floor 2",
     tenant: "Acme Corp",
@@ -180,6 +206,7 @@ const players: Player[] = [
     cpu: 35,
     lastSeen: minutesAgo(4),
     alerts: [],
+    processes: [],
   },
 ]
 
