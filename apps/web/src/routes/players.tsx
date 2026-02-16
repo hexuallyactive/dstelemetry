@@ -787,9 +787,15 @@ function RouteComponent() {
           <AlertDialogHeader>
             <AlertDialogTitle>Rotate API key</AlertDialogTitle>
             <AlertDialogDescription>
-              {deviceToRotate
-                ? `This will generate a new API key for ${deviceToRotate.name} and immediately disable the current key. Any devices using the current key will need to be updated.`
-                : 'This will disable the current API key.'}
+              {deviceToRotate ? (
+                <>
+                  <strong>Rotating the API key will immediately disable the current key.</strong>{' '}
+                  A new key will be generated for {deviceToRotate.name}. Any devices or applications
+                  using the current key will stop working and must be updated with the new key.
+                </>
+              ) : (
+                'Rotating the API key will disable the current key.'
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {rotateMutation.error && (
