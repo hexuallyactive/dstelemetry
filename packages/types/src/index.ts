@@ -203,6 +203,14 @@ export type System = z.infer<typeof SystemSchema>;
 
 export type MetricsPayload = z.infer<typeof MetricsPayloadSchema>;
 
+export const AlertSchema = z.object({
+  id: z.number(),
+  type: z.enum(["info", "warning", "error"]),
+  message: z.string(),
+  timestamp: z.string(),
+});
+export type Alert = z.infer<typeof AlertSchema>;
+
 export const MonitoredDeviceSchema = z.object({
   id: z.string(),
   hostname: z.string(),
@@ -215,19 +223,8 @@ export const MonitoredDeviceSchema = z.object({
   memory: z.number(),
   cpu: z.number(),
   lastSeen: z.string(),
-  alerts: z.array(z.object({
-    id: z.number(),
-    type: z.enum(["info", "warning", "error"]),
-    message: z.string(),
-    timestamp: z.string(),
-  })),
-  processes: z.array(
-    z.object({
-      executable: z.string(),
-      uptime: z.number(),
-      updatedAt: z.date(),
-    })
-  ),
+  alerts: z.array(AlertSchema),
+  processes: z.array(ProcessSchema),
 });
 
 export type MonitoredDevice = z.infer<typeof MonitoredDeviceSchema>;

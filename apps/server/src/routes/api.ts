@@ -587,7 +587,7 @@ export async function apiRoutes(
                           { case: { $eq: ["$$a.type", "deadman"] }, then: "Device unreachable" },
                           { case: { $eq: ["$$a.type", "cpu"] }, then: "CPU usage spike detected" },
                           { case: { $eq: ["$$a.type", "memory"] }, then: "Memory usage critically high" },
-                          { case: { $eq: ["$$a.type", "disk"] }, then: "Storage usage above threshold" }
+                          { case: { $eq: ["$$a.type", "disk"] }, then: "Storage usage above 85%" }
                         ],
                         default: "Alert"
                       }

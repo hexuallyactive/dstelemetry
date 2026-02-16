@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Activity, AlertTriangle, ChevronDown, Clock, HardDrive, Info, Loader2, MapPin, Monitor, WifiOff, XCircle } from "lucide-react"
-import { fetchPlayers, type Player, type Alert } from "@/api/players"
+import { fetchMonitoredDevices } from "@/api/players"
+import type { Alert, MonitoredDevice } from '@dstelemetry/types'
 import { formatUptime, formatRelativeTime } from "@/lib/utils"
 
 export const Route = createFileRoute('/')({
@@ -30,17 +31,17 @@ const STORAGE_WARNING_THRESHOLD = 80
 const MEMORY_WARNING_THRESHOLD = 85
 const CPU_WARNING_THRESHOLD = 75
 
-function PlayerRow({ player }: { player: Player }) {
+function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
   const [isOpen, setIsOpen] = useState(false)
-  const hasAlerts = player.alerts.length > 0
+  const hasAlerts = device.alerts.length > 0
   
-  const storageWarning = player.storage >= STORAGE_WARNING_THRESHOLD
-  const memoryWarning = player.memory >= MEMORY_WARNING_THRESHOLD
-  const cpuWarning = player.cpu >= CPU_WARNING_THRESHOLD
+  const storageWarning = device.storage >= STORAGE_WARNING_THRESHOLD
+  const memoryWarning = device.memory >= MEMORY_WARNING_THRESHOLD
+  const cpuWarning = device.cpu >= CPU_WARNING_THRESHOLD
   
-  const displayStorage = player.status === "offline" ? "0%" : `${player.storage}%`
-  const displayMemory = player.status === "offline" ? "0%" : `${player.memory}%`
-  const displayCpu = player.status === "offline" ? "0%" : `${player.cpu}%`
+  const displayStorage = device.status === "offline" ? "0%" : `${device.storage}%`
+  const displayMemory = device.status === "offline" ? "0%" : `${device.memory}%`
+  const displayCpu = device.status === "offline" ? "0%" : `${device.cpu}%`
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} asChild>
@@ -64,47 +65,47 @@ function PlayerRow({ player }: { player: Player }) {
                 <Monitor className="h-5 w-5 text-primary" />
               </div>
               <div className="flex flex-col">
-                <span className="font-normal text-foreground">{player.name}</span>
-                <span className="text-xs text-muted-foreground font-mono">{player.hostname}</span>
+                <span className="font-normal text-foreground">{device.name}</span>
+                <span className="text-xs text-muted-foreground font-mono">{device.hostname}</span>
               </div>
             </div>
           </TableCell>
           <TableCell className="hidden lg:table-cell py-4">
             <div className="flex items-center gap-2 font-extralight text-muted-foreground">
               <MapPin className="h-3.5 w-3.5" />
-              <span>{player.location}</span>
+              <span>{device.location}</span>
             </div>
           </TableCell>
           <TableCell className="py-4">
             <Badge
               variant="outline"
               className={
-                player.status === "online"
+                device.status === "online"
                   ? "border-[0.25px] border-success bg-success/6 text-success capitalize py-1"
-                  : player.status === "warning"
+                  : device.status === "warning"
                     ? "border-[0.25px] border-warning bg-warning/6 text-warning capitalize py-1"
                     : "border-[0.25px] border-destructive bg-destructive/6 text-destructive capitalize py-1"
               }
             >
-              {player.status === "online" ? "Online" : player.status === "warning" ? "Warning" : "Offline"}
+              {device.status === "online" ? "Online" : device.status === "warning" ? "Warning" : "Offline"}
             </Badge>
           </TableCell>
           <TableCell className="py-4">
-            <span className="font-extralight text-muted-foreground">{formatUptime(player.uptime)}</span>
+            <span className="font-extralight text-muted-foreground">{formatUptime(device.uptime)}</span>
           </TableCell>
-          <TableCell className={`py-4 ${storageWarning ? (player.storage >= 95 ? "text-destructive font-medium" : "text-warning font-medium") : "text-muted-foreground"}`}>
+          <TableCell className={`py-4 ${storageWarning ? (device.storage >= 95 ? "text-destructive font-medium" : "text-warning font-medium") : "text-muted-foreground"}`}>
             {displayStorage}
           </TableCell>
-          <TableCell className={`py-4 ${memoryWarning ? (player.memory >= 95 ? "text-destructive font-medium" : "text-warning font-medium") : "text-muted-foreground"}`}>
+          <TableCell className={`py-4 ${memoryWarning ? (device.memory >= 95 ? "text-destructive font-medium" : "text-warning font-medium") : "text-muted-foreground"}`}>
             {displayMemory}
           </TableCell>
-          <TableCell className={`py-4 ${cpuWarning ? (player.cpu >= 95 ? "text-destructive font-medium" : "text-warning font-medium") : "text-muted-foreground"}`}>
+          <TableCell className={`py-4 ${cpuWarning ? (device.cpu >= 95 ? "text-destructive font-medium" : "text-warning font-medium") : "text-muted-foreground"}`}>
             {displayCpu}
           </TableCell>
           <TableCell className="py-4">
             <div className="flex items-center gap-2 font-extralight text-muted-foreground">
               <Clock className="h-4 w-4" />
-              <span>{formatRelativeTime(player.lastSeen)}</span>
+              <span>{formatRelativeTime(device.lastSeen)}</span>
             </div>
           </TableCell>
         </TableRow>
@@ -114,10 +115,10 @@ function PlayerRow({ player }: { player: Player }) {
               <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapse data-[state=open]:animate-expand">
                 <div className="bg-muted/30 border-t border-b border-border/50 px-8 py-3">
                   <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                    Alerts ({player.alerts.length})
+                    Alerts ({device.alerts.length})
                   </div>
                   <div className="space-y-2">
-                    {player.alerts.map((alert: Alert) => (
+                    {device.alerts.map((alert: Alert) => (
                       <div
                         key={alert.id}
                         className="flex items-start gap-3 text-sm"
@@ -143,27 +144,27 @@ function PlayerRow({ player }: { player: Player }) {
 function RouteComponent() {
   const [selectedTenant, setSelectedTenant] = useState<string>("all")
   
-  const { data: players = [], isLoading, error } = useQuery({
-    queryKey: ['monitored-players'],
-    queryFn: fetchPlayers,
+  const { data: monitoredDevices = [], isLoading, error } = useQuery({
+    queryKey: ['monitored-devices'],
+    queryFn: fetchMonitoredDevices,
   })
   
-  const tenants = [...new Set(players.map(p => p.tenant))]
-  const filteredPlayers = selectedTenant === "all"
-    ? players
-    : players.filter(p => p.tenant === selectedTenant)
+  const tenants = [...new Set(monitoredDevices.map(d => d.tenant))]
+  const filteredMonitoredDevices = selectedTenant === "all"
+    ? monitoredDevices
+    : monitoredDevices.filter(d => d.tenant === selectedTenant)
   
-  const onlineCount = filteredPlayers.filter((p) => p.status === "online").length
-  const warningCount = filteredPlayers.filter((p) => p.status === "warning").length
-  const offlineCount = filteredPlayers.filter((p) => p.status === "offline").length
-  const totalPlayers = filteredPlayers.length
+  const onlineCount = filteredMonitoredDevices.filter((d) => d.status === "online").length
+  const warningCount = filteredMonitoredDevices.filter((d) => d.status === "warning").length
+  const offlineCount = filteredMonitoredDevices.filter((d) => d.status === "offline").length
+  const totalMonitoredDevices = filteredMonitoredDevices.length
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading players...</p>
+          <p className="text-muted-foreground">Loading monitored devices...</p>
         </div>
       </div>
     )
@@ -175,7 +176,7 @@ function RouteComponent() {
         <div className="flex flex-col items-center gap-4 text-center">
           <XCircle className="h-8 w-8 text-destructive" />
           <div>
-            <p className="text-foreground font-medium">Failed to load players</p>
+            <p className="text-foreground font-medium">Failed to load monitored devices</p>
             <p className="text-muted-foreground text-sm">
               {error instanceof Error ? error.message : 'An unexpected error occurred'}
             </p>
@@ -214,7 +215,7 @@ function RouteComponent() {
               <Monitor className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalPlayers}</div>
+              <div className="text-2xl font-bold">{totalMonitoredDevices}</div>
               <p className="text-xs text-muted-foreground">
                 {selectedTenant === "all" ? "Across all tenants" : selectedTenant}
               </p>
@@ -229,7 +230,7 @@ function RouteComponent() {
             <CardContent>
               <div className="text-2xl font-bold text-success">{onlineCount}</div>
               <p className="text-xs text-muted-foreground">
-                {totalPlayers > 0 ? ((onlineCount / totalPlayers) * 100).toFixed(0) : 0}% operational
+                {totalMonitoredDevices > 0 ? ((onlineCount / totalMonitoredDevices) * 100).toFixed(0) : 0}% operational
               </p>
             </CardContent>
           </Card>
@@ -280,8 +281,8 @@ function RouteComponent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPlayers.map((player) => (
-                  <PlayerRow key={player.id} player={player} />
+                {filteredMonitoredDevices.map((d) => (
+                  <MonitoredDeviceRow key={d.id} device={d} />
                 ))}
               </TableBody>
             </Table>

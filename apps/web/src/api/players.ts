@@ -1,47 +1,12 @@
 // Types
-import type { Process } from '@dstelemetry/types'
+import type { Alert, MonitoredDevice, Process } from '@dstelemetry/types'
 
-export interface Alert {
-  id: number
-  type: "info" | "warning" | "error"
-  message: string
-  timestamp: string
-}
-
-export interface Player {
+export interface Player extends MonitoredDevice {
   id: string
-  hostname: string
-  name: string
-  location: string
-  tenant: string
-  status: "online" | "warning" | "offline"
-  uptime: number // uptime in seconds
-  storage: number
-  memory: number // memory usage percentage
-  cpu: number
-  lastSeen: string // UTC datetime in ISO 8601 format
-  alerts: Alert[]
-  processes: Process[]
-}
-
-function randomId(): string {
-  return crypto.randomUUID()
-}
-
-// Helper to generate a UTC datetime string relative to now
-function minutesAgo(minutes: number): string {
-  return new Date(Date.now() - minutes * 60 * 1000).toISOString()
-}
-
-function hoursAgo(hours: number): string {
-  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
-}
-
-function secondsAgo(seconds: number): string {
-  return new Date(Date.now() - seconds * 1000).toISOString()
 }
 
 // Mock data
+/*
 const players: Player[] = [
   {
     id: randomId(),
@@ -209,11 +174,19 @@ const players: Player[] = [
     processes: [],
   },
 ]
+*/
 
 // API functions
+/*
 export async function fetchPlayers(): Promise<Player[]> {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 2000))
   return players
 }
+*/
 
+export async function fetchMonitoredDevices(): Promise<MonitoredDevice[]> {
+  const response = await fetch('/api/monitor')
+  const data = await response.json()
+  return data
+}
