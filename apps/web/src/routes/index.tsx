@@ -39,9 +39,9 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
   const memoryWarning = device.memory >= MEMORY_WARNING_THRESHOLD
   const cpuWarning = device.cpu >= CPU_WARNING_THRESHOLD
   
-  const displayStorage = device.status === "offline" ? "0%" : `${device.storage}%`
-  const displayMemory = device.status === "offline" ? "0%" : `${device.memory}%`
-  const displayCpu = device.status === "offline" ? "0%" : `${device.cpu}%`
+  const displayStorage = device.status === "offline" ? "0%" : `${Number(device.storage).toFixed(0)}%`
+  const displayMemory = device.status === "offline" ? "0%" : `${Number(device.memory).toFixed(0)}%`
+  const displayCpu = device.status === "offline" ? "0%" : `${Number(device.cpu).toFixed(0)}%`
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} asChild>
