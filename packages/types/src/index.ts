@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+// Consts
+export const STORAGE_WARNING_THRESHOLD = 90 //90
+export const MEMORY_WARNING_THRESHOLD = 85 //85
+export const CPU_WARNING_THRESHOLD = 90 //90
+
 // Group
 export const GroupSchema = z.object({
   id: z.string(),
@@ -211,6 +216,13 @@ export const AlertSchema = z.object({
 });
 export type Alert = z.infer<typeof AlertSchema>;
 
+export const LogSchema = z.object({
+  timestamp: z.date(),
+  level: z.enum(['debug', 'info', 'warn', 'error', 'fatal']),
+  message: z.string(),
+});
+export type Log = z.infer<typeof LogSchema>;
+
 export const MonitoredDeviceSchema = z.object({
   id: z.string(),
   hostname: z.string(),
@@ -225,6 +237,7 @@ export const MonitoredDeviceSchema = z.object({
   lastSeen: z.string(),
   alerts: z.array(AlertSchema),
   processes: z.array(ProcessSchema),
+  logs: z.array(LogSchema),
 });
 
 export type MonitoredDevice = z.infer<typeof MonitoredDeviceSchema>;

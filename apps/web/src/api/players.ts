@@ -5,6 +5,12 @@ export interface Player extends MonitoredDevice {
   id: string
 }
 
+export async function fetchMonitoredDevices(): Promise<MonitoredDevice[]> {
+  const response = await fetch('/api/monitor')
+  const data = await response.json()
+  return data
+}
+
 // Mock data
 /*
 const players: Player[] = [
@@ -184,9 +190,3 @@ export async function fetchPlayers(): Promise<Player[]> {
   return players
 }
 */
-
-export async function fetchMonitoredDevices(): Promise<MonitoredDevice[]> {
-  const response = await fetch('/api/monitor')
-  const data = await response.json()
-  return data
-}

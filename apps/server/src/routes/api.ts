@@ -495,6 +495,23 @@ export async function apiRoutes(
               as: "deviceProcesses"
             }
           },
+
+          // 8. Get latest logs
+          {
+            $lookup: {
+              from: "logs",
+              let: { host: "$hostname", group: "$groupId" },
+              pipeline: [
+                { $match: { $expr: { $and: [
+                  { $eq: ["$tags.host", "$$host"] },
+                  { $eq: ["$tags.group", "$$group"] }
+                ]}}},
+                { $sort: { timestamp: -1 } },
+                { $limit: 100 }
+              ],
+              as: "latestLogs"
+            }
+          },
         
           // 8. Project to Player shape
           {
@@ -593,6 +610,17 @@ export async function apiRoutes(
                       }
                     },
                     timestamp: { $dateToString: { date: "$$a.firstDetectedAt", format: "%Y-%m-%dT%H:%M:%S.000Z" } }
+                  }
+                }
+              },
+              logs: {
+                $map: {
+                  input: "$latestLogs",
+                  as: "l",
+                  in: {
+                    timestamp: "$$l.timestamp",
+                    level: "$$l.level",
+                    message: "$$l.fields.message"
                   }
                 }
               }

@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Activity, AlertTriangle, ChevronDown, Clock, HardDrive, Info, Loader2, MapPin, Monitor, WifiOff, XCircle } from "lucide-react"
+import { Activity, AlertTriangle, ChevronDown, Clock, FileText, HardDrive, Info, Loader2, MapPin, Monitor, Terminal, WifiOff, XCircle } from "lucide-react"
 import { fetchMonitoredDevices } from "@/api/players"
-import type { Alert, MonitoredDevice } from '@dstelemetry/types'
+import type { Alert, Log, MonitoredDevice, Process } from '@dstelemetry/types'
+import { CPU_WARNING_THRESHOLD, MEMORY_WARNING_THRESHOLD, STORAGE_WARNING_THRESHOLD } from '@dstelemetry/types'
 import { formatUptime, formatRelativeTime } from "@/lib/utils"
 
 export const Route = createFileRoute('/')({
@@ -27,13 +29,10 @@ function AlertIcon({ type }: { type: string }) {
   }
 }
 
-const STORAGE_WARNING_THRESHOLD = 80
-const MEMORY_WARNING_THRESHOLD = 85
-const CPU_WARNING_THRESHOLD = 75
-
 function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
   const [isOpen, setIsOpen] = useState(false)
-  const hasAlerts = device.alerts.length > 0
+  const hasExpandableContent =
+    device.alerts.length > 0 || device.processes.length > 0 || device.logs.length > 0
   
   const storageWarning = device.storage >= STORAGE_WARNING_THRESHOLD
   const memoryWarning = device.memory >= MEMORY_WARNING_THRESHOLD
@@ -47,13 +46,13 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
     <Collapsible open={isOpen} onOpenChange={setIsOpen} asChild>
       <>
         <TableRow
-          className={hasAlerts ? "cursor-pointer" : ""}
-          onClick={() => hasAlerts && setIsOpen(!isOpen)}
+          className={hasExpandableContent ? "cursor-pointer" : ""}
+          onClick={() => hasExpandableContent && setIsOpen(!isOpen)}
         >
           <TableCell className="py-4">
             <div className="flex items-center gap-4">
               <div className="w-4 flex items-center justify-center">
-                {hasAlerts && (
+                {hasExpandableContent && (
                   <ChevronDown
                     className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
                       isOpen ? "rotate-180" : ""
@@ -109,28 +108,97 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
             </div>
           </TableCell>
         </TableRow>
-        {hasAlerts && (
+        {hasExpandableContent && (
           <TableRow className="hover:bg-transparent">
-            <TableCell colSpan={9} className="p-0 border-0">
+            <TableCell colSpan={9} className="border-0 px-6 py-2">
               <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapse data-[state=open]:animate-expand">
-                <div className="bg-muted/30 border-t border-b border-border/50 px-8 py-3">
-                  <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                    Alerts ({device.alerts.length})
-                  </div>
-                  <div className="space-y-2">
-                    {device.alerts.map((alert: Alert) => (
-                      <div
-                        key={alert.id}
-                        className="flex items-start gap-3 text-sm"
-                      >
-                        <AlertIcon type={alert.type} />
-                        <div className="flex-1">
-                          <span className="text-foreground">{alert.message}</span>
-                          <span className="text-muted-foreground ml-2">· {formatRelativeTime(alert.timestamp)}</span>
-                        </div>
+                <div className="rounded-lg border border-border bg-background px-4 py-2 shadow-sm">
+                  <Tabs defaultValue="alerts" orientation="vertical" className="flex w-full gap-0">
+                    <TabsList variant="line" className="h-auto w-auto shrink-0 flex-col justify-start gap-1 border-r border-border bg-transparent py-1 pr-4">
+                      <TabsTrigger value="alerts" className="gap-1.5 justify-start px-3 py-2 text-warning data-[state=active]:font-semibold [&_svg]:text-warning">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Alerts ({device.alerts.length})
+                      </TabsTrigger>
+                      <TabsTrigger value="processes" className="gap-1.5 justify-start px-3 py-2 text-primary data-[state=active]:font-semibold [&_svg]:text-primary">
+                        <Terminal className="h-3.5 w-3.5" />
+                        Processes ({device.processes.length})
+                      </TabsTrigger>
+                      {/* <TabsTrigger value="logs" className="gap-1.5 justify-start px-3 py-2 data-[state=active]:font-semibold">
+                        <FileText className="h-3.5 w-3.5" />
+                        Logs ({device.logs.length})
+                      </TabsTrigger> */}
+                    </TabsList>
+                    <TabsContent value="alerts" className="mt-0 flex-1 min-w-0 pl-4">
+                      <div className="space-y-2">
+                        {device.alerts.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No alerts</p>
+                        ) : (
+                          device.alerts.map((alert: Alert) => (
+                            <div
+                              key={alert.id}
+                              className="flex items-start gap-3 text-sm"
+                            >
+                              <AlertIcon type={alert.type} />
+                              <div className="flex-1">
+                                <span className="text-foreground">{alert.message}</span>
+                                <span className="text-muted-foreground ml-2">· {formatRelativeTime(alert.timestamp)}</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    </TabsContent>
+                    <TabsContent value="processes" className="mt-0 flex-1 min-w-0 pl-4">
+                      <div className="space-y-2">
+                        {device.processes.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No processes</p>
+                        ) : (
+                          device.processes.map((proc: Process, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-3 text-sm"
+                            >
+                              <Terminal className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                              <div className="flex-1">
+                                <span className="text-foreground font-mono">{proc.executable}</span>
+                                <span className="text-muted-foreground ml-2">· uptime {formatUptime(proc.uptime)}</span>
+                                {proc.updatedAt && (
+                                  <span className="text-muted-foreground ml-2">· {formatRelativeTime(typeof proc.updatedAt === 'string' ? proc.updatedAt : new Date(proc.updatedAt).toISOString())}</span>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </TabsContent>
+                    {/* <TabsContent value="logs" className="mt-0 flex-1 min-w-0 pl-4">
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {device.logs.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No logs</p>
+                        ) : (
+                          device.logs.map((log: Log, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-3 text-sm font-mono"
+                            >
+                              <span className={`shrink-0 text-xs uppercase ${
+                                log.level === 'error' || log.level === 'fatal' ? 'text-destructive' :
+                                log.level === 'warn' ? 'text-warning' : 'text-muted-foreground'
+                              }`}>
+                                {log.level}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-foreground break-words">{log.message}</span>
+                                <span className="text-muted-foreground ml-2 shrink-0">
+                                  · {formatRelativeTime(typeof log.timestamp === 'string' ? log.timestamp : new Date(log.timestamp).toISOString())}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </TabsContent> */}
+                  </Tabs>
                 </div>
               </CollapsibleContent>
             </TableCell>
@@ -147,6 +215,9 @@ function RouteComponent() {
   const { data: monitoredDevices = [], isLoading, error } = useQuery({
     queryKey: ['monitored-devices'],
     queryFn: fetchMonitoredDevices,
+    staleTime: 1000 * 20, // 20 seconds - data stays fresh, StatusIndicator shows online
+    refetchInterval: 1000 * 30, // 30 seconds - poll for updates
+    refetchIntervalInBackground: false,
   })
   
   const tenants = [...new Set(monitoredDevices.map(d => d.tenant))]
@@ -211,7 +282,7 @@ function RouteComponent() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 shrink-0">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Players</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Devices</CardTitle>
               <Monitor className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -262,7 +333,7 @@ function RouteComponent() {
         <Card className="flex-1 min-h-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 shrink-0">
             <div>
-              <CardTitle>All Players</CardTitle>
+              <CardTitle>All Devices</CardTitle>
               <CardDescription className="text-xs text-muted-foreground mt-2">Updated every 60 seconds</CardDescription>
             </div>
           </CardHeader>
@@ -270,7 +341,7 @@ function RouteComponent() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[280px]">Player</TableHead>
+                  <TableHead className="w-[280px]">Device</TableHead>
                   <TableHead className="hidden lg:table-cell">Location</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Uptime</TableHead>

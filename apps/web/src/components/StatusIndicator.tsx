@@ -1,4 +1,5 @@
-import { useIsFetching, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
+import { fetchMonitoredDevices } from '@/api/players'
 
 export type ConnectionStatus = 'online' | 'offline' | 'loading'
 
@@ -7,26 +8,18 @@ interface StatusIndicatorProps {
 }
 
 function useConnectionStatus(): ConnectionStatus {
-  const queryClient = useQueryClient()
-  const isFetching = useIsFetching()
-  
-  // Check if we're currently fetching any data
-  if (isFetching > 0) {
-    return 'loading'
-  }
-  
-  // Check the players query state to determine online/offline
-  const playersQueryState = queryClient.getQueryState(['players'])
-  
-  if (playersQueryState?.status === 'error') {
-    return 'offline'
-  }
-  
-  if (playersQueryState?.status === 'success') {
-    return 'online'
-  }
-  
-  // Default to loading if no query has been made yet
+  const { isSuccess, isError, isStale, isFetching } = useQuery({
+    queryKey: ['monitored-devices'],
+    queryFn: fetchMonitoredDevices,
+    staleTime: 1000 * 20, // Match index.tsx - must align for isStale to work
+    refetchInterval: 1000 * 30,
+    refetchIntervalInBackground: false,
+  })
+
+  if (isError) return 'offline'
+  if (isSuccess && (isStale || isFetching)) return 'loading' // Stale or refetching → yellow
+  if (isSuccess) return 'online'
+  if (isFetching) return 'loading'
   return 'loading'
 }
 

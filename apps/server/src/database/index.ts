@@ -1,6 +1,7 @@
 import { MongoClient, Db } from 'mongodb';
 import { config } from '../config.js';
 import { logger } from '../logger.ts';
+import { CPU_WARNING_THRESHOLD, MEMORY_WARNING_THRESHOLD, STORAGE_WARNING_THRESHOLD } from 'packages/types/src/index.ts';
 
 let client: MongoClient | null = null;
 let isConnecting = false;
@@ -341,7 +342,7 @@ export async function alerts(): Promise<void> {
         {
           $match: {
             timestamp: { $gte: new Date(Date.now() - 6 * 60 * 1000) },
-            "fields.usage_idle": { $gt: 80 } // below threshold
+            "fields.usage_idle": { $gt: CPU_WARNING_THRESHOLD } // below threshold
           }
         },
         {
@@ -375,7 +376,7 @@ export async function alerts(): Promise<void> {
       {
         $match: {
           timestamp: { $gte: new Date(Date.now() - 6 * 60 * 1000) },
-          "fields.used_percent": { $lt: 85 } // 85 below threshold
+          "fields.used_percent": { $lt: MEMORY_WARNING_THRESHOLD } //  below threshold
         }
       },
       {
@@ -409,7 +410,7 @@ export async function alerts(): Promise<void> {
         {
           $match: {
             timestamp: { $gte: new Date(Date.now() - 6 * 60 * 1000) },
-            "fields.used_percent": { $lt: 90 } // below threshold
+            "fields.used_percent": { $lt: STORAGE_WARNING_THRESHOLD } // below threshold
           }
         }
       ]
@@ -511,7 +512,7 @@ export async function alerts(): Promise<void> {
         {
           $match: {
             cpu_used: {
-              $gte: 90
+              $gt: CPU_WARNING_THRESHOLD
             }
           }
         },
@@ -595,7 +596,7 @@ export async function alerts(): Promise<void> {
         // Keep only high-memory samples
         {
           $match: {
-            mem_used: { $gte: 85 } // 85
+            mem_used: { $gte: MEMORY_WARNING_THRESHOLD } // 85
           }
         },
       
@@ -677,7 +678,7 @@ export async function alerts(): Promise<void> {
         {
           $match: {
             disk_used: {
-              $gte: 90
+              $gte: STORAGE_WARNING_THRESHOLD
             }
           }
         },

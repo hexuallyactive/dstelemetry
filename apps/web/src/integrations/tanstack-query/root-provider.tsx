@@ -4,13 +4,11 @@ export function getContext() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 30,        // 30 seconds (data stays fresh)
-        gcTime: 1000 * 60 * 5,       // 5 minutes (cache retention)
-        refetchInterval: 1000 * 60,  // 60 seconds (polling interval)
-        refetchIntervalInBackground: false,
+        staleTime: 0,
+        gcTime: 1000 * 60 * 5, // 5 minutes
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
-        retry: 2,
+        retry: 3,
       },
     },
   })
