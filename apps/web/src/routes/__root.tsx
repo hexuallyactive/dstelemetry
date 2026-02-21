@@ -26,7 +26,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         </header>
         <Outlet />
       </SidebarInset>
-      {import.meta.env.DEV && true && (
+      {import.meta.env.DEV && false && (
       <TanStackDevtools
         config={{
           position: 'bottom-right',

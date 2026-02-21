@@ -69,10 +69,10 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
               </div>
             </div>
           </TableCell>
-          <TableCell className="hidden lg:table-cell py-4">
-            <div className="flex items-center gap-2 font-extralight text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5" />
-              <span>{device.location}</span>
+          <TableCell className="hidden lg:table-cell py-4 max-w-[220px] whitespace-normal">
+            <div className="flex items-center gap-2 font-extralight text-muted-foreground min-w-0">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <span className="break-words">{device.location}</span>
             </div>
           </TableCell>
           <TableCell className="py-4">
