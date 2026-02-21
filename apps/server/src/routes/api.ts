@@ -15,6 +15,7 @@ import type {
   Device,
   MonitoredDevice,
 } from '@dstelemetry/types'
+import { STORAGE_WARNING_THRESHOLD, MEMORY_WARNING_THRESHOLD, CPU_WARNING_THRESHOLD } from '@dstelemetry/types'
 
 import { getDatabase } from '../database/index.js'
 import { keyManager, storage } from '../keypal/index.js'
@@ -602,9 +603,9 @@ export async function apiRoutes(
                       $switch: {
                         branches: [
                           { case: { $eq: ["$$a.type", "deadman"] }, then: "Device unreachable" },
-                          { case: { $eq: ["$$a.type", "cpu"] }, then: "CPU usage spike detected" },
-                          { case: { $eq: ["$$a.type", "memory"] }, then: "Memory usage critically high" },
-                          { case: { $eq: ["$$a.type", "disk"] }, then: "Storage usage above 85%" }
+                          { case: { $eq: ["$$a.type", "cpu"] }, then: `CPU usage above ${CPU_WARNING_THRESHOLD}%` },
+                          { case: { $eq: ["$$a.type", "memory"] }, then: `Memory usage above ${MEMORY_WARNING_THRESHOLD}%` },
+                          { case: { $eq: ["$$a.type", "disk"] }, then: `Storage usage above ${STORAGE_WARNING_THRESHOLD}%` }
                         ],
                         default: "Alert"
                       }

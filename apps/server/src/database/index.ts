@@ -1,7 +1,7 @@
 import { MongoClient, Db } from 'mongodb';
 import { config } from '../config.js';
 import { logger } from '../logger.ts';
-import { CPU_WARNING_THRESHOLD, MEMORY_WARNING_THRESHOLD, STORAGE_WARNING_THRESHOLD } from 'packages/types/src/index.ts';
+import { CPU_WARNING_THRESHOLD, MEMORY_WARNING_THRESHOLD, STORAGE_WARNING_THRESHOLD } from '@dstelemetry/types';
 
 let client: MongoClient | null = null;
 let isConnecting = false;

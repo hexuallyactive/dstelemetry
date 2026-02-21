@@ -11,9 +11,7 @@
     "outDir": "dist",
     "rootDir": "src",
 
-    "paths": {
-      "@/*": ["./src/*"]
-    },
+
 
     /* Types */
     "types": ["node"],
