@@ -4,6 +4,7 @@
   "description": "",
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "dev": "tsx watch src/main.ts",
     "dev-inspect": "tsx --watch --inspect src/main.ts"
   },

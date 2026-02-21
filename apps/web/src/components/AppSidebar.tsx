@@ -44,7 +44,7 @@ import {
 
 const monitoringItems = [
   {
-    title: 'Alerts',
+    title: 'Devices',
     url: '/',
     icon: Monitor,
   },

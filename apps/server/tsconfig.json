@@ -7,11 +7,14 @@
     "lib": ["ES2022"],
 
     /* Emit */
-    "noEmit": true,
+    "noEmit": false,
     "outDir": "dist",
     "rootDir": "src",
 
-
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "emitDeclarationOnly": true,
+    "declaration": true,
 
     /* Types */
     "types": ["node"],

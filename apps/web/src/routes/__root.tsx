@@ -26,9 +26,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         </header>
         <Outlet />
       </SidebarInset>
+      {import.meta.env.DEV && true && (
       <TanStackDevtools
         config={{
           position: 'bottom-right',
+          theme: 'dark'
         }}
         plugins={[
           {
@@ -38,6 +40,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
           TanStackQueryDevtools,
         ]}
       />
+      )}
     </SidebarProvider>
   ),
 })

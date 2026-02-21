@@ -268,7 +268,7 @@ function RouteComponent() {
               <SelectValue placeholder="Filter by tenant" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Tenants</SelectItem>
+              <SelectItem value="all">All Groups</SelectItem>
               {tenants.map((tenant) => (
                 <SelectItem key={tenant} value={tenant}>
                   {tenant}

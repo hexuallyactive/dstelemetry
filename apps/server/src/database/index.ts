@@ -410,7 +410,21 @@ export async function alerts(): Promise<void> {
         {
           $match: {
             timestamp: { $gte: new Date(Date.now() - 6 * 60 * 1000) },
-            "fields.used_percent": { $lt: STORAGE_WARNING_THRESHOLD } // below threshold
+            "fields.used_percent": { $type: "number" }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              group: "$tags.group",
+              host: "$tags.host"
+            },
+            max_used: { $max: "$fields.used_percent" }
+          }
+        },
+        {
+          $match: {
+            max_used: { $lt: STORAGE_WARNING_THRESHOLD }
           }
         }
       ]

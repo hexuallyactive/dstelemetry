@@ -143,7 +143,7 @@ const SystemMetricSchema = z.object({
   timestamp: TimestampSchema,
   tags: TagsSchema,
   fields: z.object({
-    uptime: z.number(),
+    uptime: z.number()
   }),
 });
 
@@ -202,6 +202,8 @@ export const SystemSchema = z.object({
   group: z.string(),
   host: z.string(),
   uptime: z.number(),
+  platform: z.string(),
+  platform_version: z.string(),
   updatedAt: z.date(),
 });
 export type System = z.infer<typeof SystemSchema>;

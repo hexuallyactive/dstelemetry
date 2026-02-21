@@ -103,7 +103,7 @@ export async function telemetryRoutes(
           const update = {
             $setOnInsert: {
               group: group,
-              host: host,
+              host: host
             },
             $set: {
               uptime: metric.fields.uptime,
