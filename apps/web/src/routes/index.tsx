@@ -121,7 +121,7 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
                       </TabsTrigger>
                       <TabsTrigger value="processes" className="gap-1.5 justify-start px-3 py-2 text-primary data-[state=active]:font-semibold [&_svg]:text-primary">
                         <AppWindow className="h-3.5 w-3.5" />
-                        Processes ({device.processes.length})
+                        Apps ({device.processes.length})
                       </TabsTrigger>
                       {/* <TabsTrigger value="logs" className="gap-1.5 justify-start px-3 py-2 data-[state=active]:font-semibold">
                         <FileText className="h-3.5 w-3.5" />
