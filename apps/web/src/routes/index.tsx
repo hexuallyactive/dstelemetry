@@ -128,7 +128,7 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
                         Logs ({device.logs.length})
                       </TabsTrigger> */}
                     </TabsList>
-                    <TabsContent value="alerts" className="mt-0 flex-1 min-w-0 pl-4">
+                    <TabsContent value="alerts" className="mt-0 flex-1 min-w-0 pl-4 pt-2">
                       <div className="space-y-2">
                         {device.alerts.length === 0 ? (
                           <p className="text-sm text-muted-foreground">No alerts</p>
@@ -148,7 +148,7 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
                         )}
                       </div>
                     </TabsContent>
-                    <TabsContent value="processes" className="mt-0 flex-1 min-w-0 pl-4">
+                    <TabsContent value="processes" className="mt-0 flex-1 min-w-0 pl-4 pt-2">
                       <div className="space-y-2">
                         {device.processes.length === 0 ? (
                           <p className="text-sm text-muted-foreground">No processes</p>
