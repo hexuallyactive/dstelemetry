@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "start": "node dist/main.js",
     "dev": "tsx watch src/main.ts",
     "dev-inspect": "tsx --watch --inspect src/main.ts"
   },

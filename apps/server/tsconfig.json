@@ -1,6 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "allowImportingTsExtensions": false,
+
     /* Node runtime */
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
@@ -12,9 +14,6 @@
     "rootDir": "src",
 
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "emitDeclarationOnly": true,
-    "declaration": true,
 
     /* Types */
     "types": ["node"],

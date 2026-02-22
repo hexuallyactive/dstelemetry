@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Activity, AlertTriangle, ChevronDown, Clock, FileText, HardDrive, Info, Loader2, MapPin, Monitor, Terminal, WifiOff, XCircle } from "lucide-react"
+import { Activity, AlertTriangle, AppWindow, ChevronDown, Clock, FileText, HardDrive, Info, Loader2, MapPin, Monitor, WifiOff, XCircle } from "lucide-react"
 import { fetchMonitoredDevices } from "@/api/players"
 import type { Alert, Log, MonitoredDevice, Process } from '@dstelemetry/types'
 import { CPU_WARNING_THRESHOLD, MEMORY_WARNING_THRESHOLD, STORAGE_WARNING_THRESHOLD } from '@dstelemetry/types'
@@ -120,7 +120,7 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
                         Alerts ({device.alerts.length})
                       </TabsTrigger>
                       <TabsTrigger value="processes" className="gap-1.5 justify-start px-3 py-2 text-primary data-[state=active]:font-semibold [&_svg]:text-primary">
-                        <Terminal className="h-3.5 w-3.5" />
+                        <AppWindow className="h-3.5 w-3.5" />
                         Processes ({device.processes.length})
                       </TabsTrigger>
                       {/* <TabsTrigger value="logs" className="gap-1.5 justify-start px-3 py-2 data-[state=active]:font-semibold">
@@ -158,7 +158,7 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
                               key={idx}
                               className="flex items-start gap-3 text-sm"
                             >
-                              <Terminal className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                              <AppWindow className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                               <div className="flex-1">
                                 <span className="text-foreground font-mono">{proc.executable}</span>
                                 <span className="text-muted-foreground ml-2">· uptime {formatUptime(proc.uptime)}</span>

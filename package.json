@@ -8,7 +8,7 @@
   "packageManager": "pnpm@10.28.2",
   "scripts": {
     "dev": "pnpm -r dev",
-    "build": "pnpm -r build",
+    "build": "pnpm --filter @dstelemetry/web build && pnpm --filter @dstelemetry/server build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "clean": "pnpm -r exec rm -rf dist node_modules"

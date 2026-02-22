@@ -1,10 +1,10 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import { authenticateApiKey } from '../middleware/auth.js'
 import { MetricsPayloadSchema, ProcessSchema, SystemSchema, type CpuMetric, type MemMetric, type MetricsPayload, type DiskMetric, type System, type SystemMetric, type LogMetric, type Process,type ProcessMetric } from '@dstelemetry/types'
-import { getDatabase } from '../database/index.ts'
-import { logger } from '../logger.ts'
+import { getDatabase } from '../database/index.js'
+import { logger } from '../logger.js'
 import { exactOptional, z } from 'zod'
-import { uptimeSecondsFromNsBigInt } from '../utils/index.ts'
+import { uptimeSecondsFromNsBigInt } from '../utils/index.js'
 
 export async function telemetryRoutes(
   fastify: FastifyInstance,
