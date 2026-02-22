@@ -53,12 +53,12 @@ const monitoringItems = [
 const configurationItems = [
   {
     title: 'Groups',
-    url: '/clients',
+    url: '/groups',
     icon: Building2,
   },
   {
     title: 'Devices',
-    url: '/players',
+    url: '/devices',
     icon: MonitorCog,
   }
 ]
