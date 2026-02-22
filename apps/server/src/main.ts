@@ -25,7 +25,7 @@ async function main() {
   await registerRoutes(app);
 
   await app.register(rateLimit, {
-    max: 50,
+    max: 150,
     timeWindow: '30s',
     addHeaders: {
       'x-ratelimit-remaining': true,

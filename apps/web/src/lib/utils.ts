@@ -56,11 +56,17 @@ export function formatUptime(seconds: number): string {
 /**
  * Formats a UTC datetime string to a human-readable relative time.
  * E.g., "30s ago", "2m ago", "1h ago", "3d ago"
+ * When staleThresholdDays is set, returns "-" for dates older than that.
  */
-export function formatRelativeTime(dateString: string): string {
+export function formatRelativeTime(dateString: string, staleThresholdDays?: number): string {
   const date = new Date(dateString)
+  if (isNaN(date.getTime())) return "-"
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
+  if (staleThresholdDays !== undefined) {
+    const diffDays = diffMs / (1000 * 60 * 60 * 24)
+    if (diffDays > staleThresholdDays) return "-"
+  }
   const diffSeconds = Math.floor(diffMs / 1000)
   
   if (diffSeconds < 60) {

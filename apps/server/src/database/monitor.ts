@@ -1,6 +1,11 @@
 import type { Db } from 'mongodb'
 import type { MonitoredDevice } from '@dstelemetry/types'
-import { STORAGE_WARNING_THRESHOLD, MEMORY_WARNING_THRESHOLD, CPU_WARNING_THRESHOLD } from '@dstelemetry/types'
+import {
+  STORAGE_WARNING_THRESHOLD,
+  MEMORY_WARNING_THRESHOLD,
+  CPU_WARNING_THRESHOLD,
+  DATA_STALE_MS,
+} from '@dstelemetry/types'
 
 export async function getMonitorData(db: Db): Promise<MonitoredDevice[]> {
   const data = await db.collection('devices').aggregate(
@@ -147,25 +152,48 @@ export async function getMonitorData(db: Db): Promise<MonitoredDevice[]> {
           location: "$location",
           tenant: "$groupDoc.name",
           status: {
-            $cond: {
-              if: {
-                $in: [
-                  "deadman",
-                  { $ifNull: [
-                    { $map: { input: "$deviceAlerts", as: "a", in: "$$a.type" } },
-                    []
-                  ]}
-                ]
+            $let: {
+              vars: {
+                lastSeenTs: {
+                  $max: [
+                    { $ifNull: [{ $arrayElemAt: ['$latestCpu.timestamp', 0] }, new Date(0)] },
+                    { $ifNull: [{ $arrayElemAt: ['$latestMem.timestamp', 0] }, new Date(0)] },
+                    { $ifNull: [{ $arrayElemAt: ['$latestDisk.timestamp', 0] }, new Date(0)] },
+                  ],
+                },
               },
-              then: "offline",
-              else: {
+              in: {
                 $cond: {
-                  if: { $gt: [{ $size: { $ifNull: ["$deviceAlerts", []] } }, 0] },
-                  then: "warning",
-                  else: "online"
-                }
-              }
-            }
+                  if: {
+                    $in: [
+                      'deadman',
+                      {
+                        $ifNull: [
+                          { $map: { input: '$deviceAlerts', as: 'a', in: '$$a.type' } },
+                          [],
+                        ],
+                      },
+                    ],
+                  },
+                  then: 'offline',
+                  else: {
+                    $cond: {
+                      if: {
+                        $gt: [{ $subtract: ['$$NOW', '$$lastSeenTs'] }, DATA_STALE_MS],
+                      },
+                      then: 'offline',
+                      else: {
+                        $cond: {
+                          if: { $gt: [{ $size: { $ifNull: ['$deviceAlerts', []] } }, 0] },
+                          then: 'warning',
+                          else: 'online',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           uptime: { $ifNull: [{ $arrayElemAt: ["$latestSystem.uptime", 0] }, 0] },
           storage: { $ifNull: [{ $arrayElemAt: ["$latestDisk.fields.used_percent", 0] }, 0] },

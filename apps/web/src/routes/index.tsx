@@ -104,7 +104,7 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
           <TableCell className="py-4">
             <div className="flex items-center gap-2 font-extralight text-muted-foreground">
               <Clock className="h-4 w-4" />
-              <span>{formatRelativeTime(device.lastSeen)}</span>
+              <span>{formatRelativeTime(device.lastSeen, 365)}</span>
             </div>
           </TableCell>
         </TableRow>

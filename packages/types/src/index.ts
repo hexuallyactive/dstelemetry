@@ -4,6 +4,8 @@ import { z } from "zod";
 export const STORAGE_WARNING_THRESHOLD = 90 //90
 export const MEMORY_WARNING_THRESHOLD = 85 //85
 export const CPU_WARNING_THRESHOLD = 90 //90
+/** Max age of last telemetry before device is considered offline (ms). Aligns with deadman alert threshold. */
+export const DATA_STALE_MS = 5 * 60 * 1000
 
 // Group
 export const GroupSchema = z.object({
