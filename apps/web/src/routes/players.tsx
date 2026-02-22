@@ -507,8 +507,10 @@ function RouteComponent() {
                         <TableCell className="text-muted-foreground">
                           {groupMap.get(device.groupId) ?? device.groupId}
                         </TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground">
-                          {device.location || '—'}
+                        <TableCell className="hidden md:table-cell text-muted-foreground align-top whitespace-normal">
+                          <span className="inline-block max-w-[200px] break-words">
+                            {device.location || '—'}
+                          </span>
                         </TableCell>
                         <TableCell className="hidden md:table-cell text-muted-foreground">
                           {formatDate(device.createdAt)}
