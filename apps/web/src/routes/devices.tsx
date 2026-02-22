@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 
 import {
   CreateDeviceBody,
@@ -51,7 +51,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Check, ChevronDown, ChevronRight, Copy, Loader2, Pencil, Plus, RefreshCw, XCircle } from 'lucide-react'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 export const Route = createFileRoute('/devices')({
   component: RouteComponent,
@@ -481,26 +480,21 @@ function RouteComponent() {
                   </TableRow>
                 )}
                 {devices.map((device) => (
-                  <Collapsible
-                    key={device.id}
-                    open={expandedRows.has(device.id)}
-                    onOpenChange={() => toggleRow(device.id)}
-                    asChild
-                  >
-                    <>
-                      <TableRow className="cursor-pointer hover:bg-muted/50">
-                        <CollapsibleTrigger asChild>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              {expandedRows.has(device.id) ? (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                              )}
-                              {device.name}
-                            </div>
-                          </TableCell>
-                        </CollapsibleTrigger>
+                  <Fragment key={device.id}>
+                    <TableRow
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => toggleRow(device.id)}
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {expandedRows.has(device.id) ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          {device.name}
+                        </div>
+                      </TableCell>
                         <TableCell className="text-muted-foreground">
                           {device.hostname.toUpperCase()}
                         </TableCell>
@@ -544,11 +538,11 @@ function RouteComponent() {
                             </Button>
                           </div>
                         </TableCell>
-                      </TableRow>
-                      <CollapsibleContent asChild>
-                        <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableCell colSpan={7} className="py-4">
-                            <div className="pl-6 space-y-3">
+                    </TableRow>
+                    {expandedRows.has(device.id) && (
+                      <TableRow className="bg-muted/30 hover:bg-muted/30">
+                        <TableCell colSpan={7} className="py-4">
+                          <div className="pl-6 space-y-3">
                               <div className="text-sm font-medium text-foreground">API Key</div>
                               <div className="flex items-center gap-3">
                                 <code className="flex-1 bg-background border rounded-md px-3 py-2 text-sm font-mono text-muted-foreground truncate">
@@ -588,12 +582,11 @@ function RouteComponent() {
                                   Key ID: {device.apiKeyId}
                                 </p>
                               )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      </CollapsibleContent>
-                    </>
-                  </Collapsible>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>

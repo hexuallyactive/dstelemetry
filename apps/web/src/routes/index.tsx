@@ -43,12 +43,11 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
   const displayCpu = device.status === "offline" ? "0%" : `${Number(device.cpu).toFixed(0)}%`
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} asChild>
-      <>
-        <TableRow
-          className={hasExpandableContent ? "cursor-pointer" : ""}
-          onClick={() => hasExpandableContent && setIsOpen(!isOpen)}
-        >
+    <>
+      <TableRow
+        className={hasExpandableContent ? "cursor-pointer" : ""}
+        onClick={() => hasExpandableContent && setIsOpen(!isOpen)}
+      >
           <TableCell className="py-4">
             <div className="flex items-center gap-4">
               <div className="w-4 flex items-center justify-center">
@@ -111,7 +110,8 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
         {hasExpandableContent && (
           <TableRow className="hover:bg-transparent">
             <TableCell colSpan={9} className="border-0 px-6 py-2">
-              <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapse data-[state=open]:animate-expand">
+              <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+                <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapse data-[state=open]:animate-expand">
                 <div className="rounded-lg border border-border bg-background px-4 py-2 shadow-sm">
                   <Tabs defaultValue="alerts" orientation="vertical" className="flex w-full gap-0">
                     <TabsList variant="line" className="h-auto w-auto shrink-0 flex-col justify-start gap-1 border-r border-border bg-transparent py-1 pr-4">
@@ -200,12 +200,12 @@ function MonitoredDeviceRow({ device }: { device: MonitoredDevice }) {
                     </TabsContent> */}
                   </Tabs>
                 </div>
-              </CollapsibleContent>
+                </CollapsibleContent>
+              </Collapsible>
             </TableCell>
           </TableRow>
         )}
-      </>
-    </Collapsible>
+    </>
   )
 }
 

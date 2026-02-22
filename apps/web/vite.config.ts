@@ -8,6 +8,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  publicDir: 'static',
   build: {
     outDir: '../server/dist/public',
     emptyOutDir: true,
